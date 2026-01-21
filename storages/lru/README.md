@@ -25,7 +25,7 @@ npm install @node-ts-cache/core @node-ts-cache/lru-storage
 
 ```typescript
 import { SyncCache, ExpirationStrategy } from '@node-ts-cache/core';
-import LRUStorage from '@node-ts-cache/lru-storage';
+import { LRUStorage } from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({
 	max: 500 // Maximum 500 items
@@ -45,22 +45,16 @@ class DataService {
 ```typescript
 const storage = new LRUStorage({
 	max: 1000,
-	maxAge: 1000 * 60 * 5 // 5 minutes in milliseconds
+	ttl: 300 // 5 minutes in seconds
 });
 ```
-
-> **Note:** LRU cache uses `maxAge` in **milliseconds**, while ExpirationStrategy uses `ttl` in **seconds**.
 
 ### Memory-Based Limit
 
 ```typescript
 const storage = new LRUStorage({
 	max: 500,
-	maxSize: 5000, // Maximum total "size" units
-	sizeCalculation: (value, key) => {
-		// Return the "size" of each item
-		return JSON.stringify(value).length;
-	}
+	maxSize: 5000 // Maximum total "size" units
 });
 ```
 
@@ -68,7 +62,7 @@ const storage = new LRUStorage({
 
 ```typescript
 import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
-import LRUStorage from '@node-ts-cache/lru-storage';
+import { LRUStorage } from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({ max: 1000 });
 const strategy = new ExpirationStrategy(storage);
@@ -85,7 +79,7 @@ class UserService {
 
 ```typescript
 import { MultiCache, ExpirationStrategy } from '@node-ts-cache/core';
-import LRUStorage from '@node-ts-cache/lru-storage';
+import { LRUStorage } from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({ max: 1000 });
 const strategy = new ExpirationStrategy(storage);
@@ -116,16 +110,11 @@ strategy.clear();
 
 ## Constructor Options
 
-Accepts [lru-cache options](https://www.npmjs.com/package/lru-cache#options) (v6.x):
-
-| Option            | Type       | Default  | Description                                     |
-| ----------------- | ---------- | -------- | ----------------------------------------------- |
-| `max`             | `number`   | Required | Maximum number of items                         |
-| `maxAge`          | `number`   | -        | Maximum age in **milliseconds**                 |
-| `maxSize`         | `number`   | -        | Maximum total size (requires `sizeCalculation`) |
-| `sizeCalculation` | `function` | -        | Function to calculate item size                 |
-| `updateAgeOnGet`  | `boolean`  | `false`  | Reset TTL on get                                |
-| `dispose`         | `function` | -        | Called when items are evicted                   |
+| Option    | Type     | Default  | Description                                 |
+| --------- | -------- | -------- | ------------------------------------------- |
+| `max`     | `number` | Required | Maximum number of items                     |
+| `ttl`     | `number` | -        | Time to live in **seconds**                 |
+| `maxSize` | `number` | -        | Maximum total size (for memory-based limit) |
 
 ## Interface
 
@@ -143,26 +132,6 @@ interface IMultiSynchronousCacheType {
 }
 ```
 
-## TTL Behavior
-
-When using with `ExpirationStrategy`:
-
-- LRU's `maxAge` is in **milliseconds**
-- ExpirationStrategy's `ttl` is in **seconds**
-- Both TTLs apply - the shorter one wins
-
-**Recommendation:** Set LRU's `maxAge` longer than your strategy TTL, or omit it entirely and let ExpirationStrategy handle expiration:
-
-```typescript
-// Option 1: Let ExpirationStrategy handle TTL
-const storage = new LRUStorage({ max: 1000 }); // No maxAge
-const strategy = new ExpirationStrategy(storage);
-
-// Option 2: Use LRU TTL with "forever" strategy
-const storage = new LRUStorage({ max: 1000, maxAge: 60000 });
-strategy.setItem('key', value, { isCachedForever: true });
-```
-
 ## LRU Eviction
 
 When the cache reaches `max` items, the least recently accessed items are automatically evicted to make room for new ones. This makes LRU ideal for:
@@ -173,7 +142,7 @@ When the cache reaches `max` items, the least recently accessed items are automa
 
 ## Dependencies
 
-- `lru-cache` ^6.0.0
+- `lru-cache` ^10.0.0
 
 ## Requirements
 

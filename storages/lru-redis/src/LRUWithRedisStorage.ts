@@ -1,29 +1,38 @@
 import { IAsynchronousCacheType } from '@node-ts-cache/core';
 
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import * as Redis from 'ioredis';
 
+export interface LRUWithRedisStorageOptions {
+	/** Maximum number of items in local LRU cache */
+	max?: number;
+	/** Time to live in seconds for both local and Redis cache */
+	ttl?: number;
+}
+
 export class LRUWithRedisStorage implements IAsynchronousCacheType {
-	private myCache: LRU<string, unknown>;
+	// Using 'any' for cache value type as it needs to store arbitrary data
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private myCache: LRUCache<string, any>;
 
-	/** maxAge and ttl in seconds! */
-	private options: LRU.Options<string, unknown>;
+	/** ttl in seconds! */
+	private options: Required<LRUWithRedisStorageOptions>;
 
-	constructor(options: LRU.Options<string, unknown>, private redis: () => Redis.Redis) {
+	constructor(options: LRUWithRedisStorageOptions, private redis: () => Redis.Redis) {
 		this.options = {
 			max: 500,
-			maxAge: 86400,
+			ttl: 86400,
 			...options
 		};
-		this.myCache = new LRU({
-			...this.options,
-			maxAge: (this.options.maxAge || 86400) * 1000 // in ms
+		this.myCache = new LRUCache({
+			max: this.options.max,
+			ttl: this.options.ttl * 1000 // convert to ms
 		});
 	}
 
 	public async getItem<T>(key: string): Promise<T | undefined> {
 		// check local cache
-		let localCache: unknown = this.myCache.get(key);
+		let localCache = this.myCache.get(key);
 
 		if (localCache === undefined) {
 			// check central cache
@@ -37,7 +46,9 @@ export class LRUWithRedisStorage implements IAsynchronousCacheType {
 					localCache = undefined;
 				}
 				// if found on central cache, copy it to a local cache
-				this.myCache.set(key, localCache);
+				if (localCache !== undefined) {
+					this.myCache.set(key, localCache);
+				}
 			}
 		}
 
@@ -51,18 +62,15 @@ export class LRUWithRedisStorage implements IAsynchronousCacheType {
 		options?: { ttl?: number }
 	): Promise<void> {
 		this.myCache.set(key, content);
-		if (this.options?.maxAge) {
-			await this.redis().setex(key, options?.ttl || this.options.maxAge, JSON.stringify(content));
+		const ttl = options?.ttl || this.options.ttl;
+		if (ttl) {
+			await this.redis().setex(key, ttl, JSON.stringify(content));
 		} else {
 			await this.redis().set(key, JSON.stringify(content));
 		}
 	}
 
 	public async clear(): Promise<void> {
-		// flush not supported, recreate local lru cache instance
-		this.myCache = new LRU({
-			...this.options,
-			maxAge: (this.options.maxAge || 86400) * 1000 // in ms
-		});
+		this.myCache.clear();
 	}
 }

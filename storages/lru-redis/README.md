@@ -37,7 +37,7 @@ Two-tier cache storage adapter for [@node-ts-cache/core](https://www.npmjs.com/p
 
 1. **Get**: Check local LRU first. On miss, check Redis. If found in Redis, populate local LRU.
 2. **Set**: Write to both local LRU and Redis.
-3. **Clear**: Clear both caches.
+3. **Clear**: Clear local LRU cache.
 
 ## Installation
 
@@ -51,7 +51,7 @@ npm install @node-ts-cache/core @node-ts-cache/lru-redis-storage ioredis
 
 ```typescript
 import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
-import LRUWithRedisStorage from '@node-ts-cache/lru-redis-storage';
+import { LRUWithRedisStorage } from '@node-ts-cache/lru-redis-storage';
 import Redis from 'ioredis';
 
 const redisClient = new Redis({
@@ -74,13 +74,13 @@ class UserService {
 }
 ```
 
-### With LRU TTL
+### With TTL
 
 ```typescript
 const storage = new LRUWithRedisStorage(
 	{
 		max: 500,
-		maxAge: 1000 * 60 // Local cache TTL: 1 minute (milliseconds)
+		ttl: 60 // Local and Redis cache TTL: 1 minute (in seconds)
 	},
 	() => redisClient
 );
@@ -101,7 +101,7 @@ const user1 = await strategy.getItem<User>('user:123');
 // Second get - hits local LRU (fast!)
 const user2 = await strategy.getItem<User>('user:123');
 
-// Clear both caches
+// Clear local LRU cache
 await strategy.clear();
 ```
 
@@ -109,24 +109,22 @@ await strategy.clear();
 
 ```typescript
 new LRUWithRedisStorage(
-  lruOptions: LRU.Options<string, any>,
+  options: LRUWithRedisStorageOptions,
   redis: () => Redis.Redis
 )
 ```
 
-| Parameter    | Type                | Description                                                                                    |
-| ------------ | ------------------- | ---------------------------------------------------------------------------------------------- |
-| `lruOptions` | `LRU.Options`       | Options for local LRU cache (see [lru-cache](https://www.npmjs.com/package/lru-cache#options)) |
-| `redis`      | `() => Redis.Redis` | Factory function returning an ioredis client                                                   |
+| Parameter | Type                         | Description                              |
+| --------- | ---------------------------- | ---------------------------------------- |
+| `options` | `LRUWithRedisStorageOptions` | Options for local LRU cache and TTL      |
+| `redis`   | `() => Redis.Redis`          | Factory function returning ioredis client |
 
-### LRU Options
+### Options
 
-| Option            | Type       | Default  | Description                   |
-| ----------------- | ---------- | -------- | ----------------------------- |
-| `max`             | `number`   | Required | Maximum items in local cache  |
-| `maxAge`          | `number`   | -        | Local TTL in **milliseconds** |
-| `maxSize`         | `number`   | -        | Maximum total size            |
-| `sizeCalculation` | `function` | -        | Size calculator function      |
+| Option | Type     | Default | Description                                      |
+| ------ | -------- | ------- | ------------------------------------------------ |
+| `max`  | `number` | `500`   | Maximum items in local LRU cache                 |
+| `ttl`  | `number` | `86400` | Time to live in **seconds** (for both LRU & Redis) |
 
 ## Interface
 
@@ -192,12 +190,12 @@ class SessionService {
 - **Local LRU hit**: ~0.01ms (in-process memory access)
 - **Redis hit**: ~1-5ms (network round-trip)
 - **Set local `max`** based on your memory budget and access patterns
-- **Shorter local TTL** = fresher data but more Redis hits
-- **Longer local TTL** = better performance but potentially stale data
+- **Shorter TTL** = fresher data but more Redis hits
+- **Longer TTL** = better performance but potentially stale data
 
 ## Dependencies
 
-- `lru-cache` ^6.0.0
+- `lru-cache` ^10.0.0
 - `ioredis` ^5.3.2
 
 ## Requirements
