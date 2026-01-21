@@ -167,7 +167,7 @@ jobs:
           echo "### Installation" >> release_notes.md
           echo "" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo 'npm install @hokify/node-ts-cache' >> release_notes.md
+          echo 'npm install @node-ts-cache/core' >> release_notes.md
           echo '```' >> release_notes.md
 
           cat release_notes.md

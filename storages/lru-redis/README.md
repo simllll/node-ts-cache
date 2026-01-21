@@ -1,8 +1,8 @@
-# @hokify/node-ts-cache-lru-redis-storage
+# @node-ts-cache/lru-redis-storage
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-redis-storage.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache-lru-redis-storage)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-redis-storage.svg)](https://www.npmjs.org/package/@node-ts-cache/lru-redis-storage)
 
-Two-tier cache storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/package/@hokify/node-ts-cache) combining local LRU cache with remote Redis fallback.
+Two-tier cache storage adapter for [@node-ts-cache/core](https://www.npmjs.com/package/@node-ts-cache/core) combining local LRU cache with remote Redis fallback.
 
 ## Features
 
@@ -42,7 +42,7 @@ Two-tier cache storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com
 ## Installation
 
 ```bash
-npm install @hokify/node-ts-cache @hokify/node-ts-cache-lru-redis-storage ioredis
+npm install @node-ts-cache/core @node-ts-cache/lru-redis-storage ioredis
 ```
 
 ## Usage
@@ -50,8 +50,8 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-lru-redis-storage ioredi
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import LRUWithRedisStorage from '@hokify/node-ts-cache-lru-redis-storage';
+import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
+import LRUWithRedisStorage from '@node-ts-cache/lru-redis-storage';
 import Redis from 'ioredis';
 
 const redisClient = new Redis({

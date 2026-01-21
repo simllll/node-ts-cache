@@ -1,8 +1,8 @@
-# @hokify/node-ts-cache-redisio-storage
+# @node-ts-cache/ioredis-storage
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redisio-storage.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache-redisio-storage)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/ioredis-storage.svg)](https://www.npmjs.org/package/@node-ts-cache/ioredis-storage)
 
-Modern Redis storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/package/@hokify/node-ts-cache) using [ioredis](https://github.com/redis/ioredis) with optional Snappy compression.
+Modern Redis storage adapter for [@node-ts-cache/core](https://www.npmjs.com/package/@node-ts-cache/core) using [ioredis](https://github.com/redis/ioredis) with optional Snappy compression.
 
 ## Features
 
@@ -16,7 +16,7 @@ Modern Redis storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/p
 ## Installation
 
 ```bash
-npm install @hokify/node-ts-cache @hokify/node-ts-cache-redisio-storage ioredis
+npm install @node-ts-cache/core @node-ts-cache/ioredis-storage ioredis
 ```
 
 ## Usage
@@ -24,8 +24,8 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-redisio-storage ioredis
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import RedisIOStorage from '@hokify/node-ts-cache-redisio-storage';
+import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
+import RedisIOStorage from '@node-ts-cache/ioredis-storage';
 import Redis from 'ioredis';
 
 const redisClient = new Redis({
@@ -77,9 +77,9 @@ When an error handler is set, write operations don't await the Redis response, m
 This storage supports batch operations, making it ideal for multi-tier caching:
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import RedisIOStorage from '@hokify/node-ts-cache-redisio-storage';
-import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
+import { MultiCache, ExpirationStrategy } from '@node-ts-cache/core';
+import RedisIOStorage from '@node-ts-cache/ioredis-storage';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
 
 const localCache = new ExpirationStrategy(new NodeCacheStorage());
 const redisCache = new RedisIOStorage(() => redisClient, { maxAge: 3600 });

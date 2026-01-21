@@ -1,4 +1,4 @@
-import { IAsynchronousCacheType } from '@hokify/node-ts-cache';
+import { IAsynchronousCacheType } from '@node-ts-cache/core';
 
 import Bluebird from 'bluebird';
 import * as Redis from 'redis';

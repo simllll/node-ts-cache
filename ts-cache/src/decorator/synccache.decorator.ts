@@ -41,14 +41,14 @@ export function SyncCache(
 					return entry;
 				}
 			} catch (err) {
-				console.warn('@hokify/node-ts-cache: reading cache failed', cacheKey, err);
+				console.warn('@node-ts-cache/core: reading cache failed', cacheKey, err);
 			}
 			const methodResult = runMethod();
 
 			try {
 				cachingStrategy.setItem(cacheKey, methodResult, options);
 			} catch (err) {
-				console.warn('@hokify/node-ts-cache: writing result to cache failed', cacheKey, err);
+				console.warn('@node-ts-cache/core: writing result to cache failed', cacheKey, err);
 			}
 			return methodResult;
 		};

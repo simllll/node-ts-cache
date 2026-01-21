@@ -1,8 +1,8 @@
-# @hokify/node-ts-cache-node-cache-storage
+# @node-ts-cache/node-cache-storage
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-node-cache-storage.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache-node-cache-storage)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/node-cache-storage.svg)](https://www.npmjs.org/package/@node-ts-cache/node-cache-storage)
 
-In-memory storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/package/@hokify/node-ts-cache) using [node-cache](https://www.npmjs.com/package/node-cache).
+In-memory storage adapter for [@node-ts-cache/core](https://www.npmjs.com/package/@node-ts-cache/core) using [node-cache](https://www.npmjs.com/package/node-cache).
 
 ## Features
 
@@ -16,7 +16,7 @@ In-memory storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/pack
 ## Installation
 
 ```bash
-npm install @hokify/node-ts-cache @hokify/node-ts-cache-node-cache-storage
+npm install @node-ts-cache/core @node-ts-cache/node-cache-storage
 ```
 
 ## Usage
@@ -24,8 +24,8 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-node-cache-storage
 ### Basic Usage
 
 ```typescript
-import { SyncCache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
+import { SyncCache, ExpirationStrategy } from '@node-ts-cache/core';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
@@ -54,8 +54,8 @@ const storage = new NodeCacheStorage({
 Works with `@Cache` decorator as well (operations are still synchronous internally):
 
 ```typescript
-import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
+import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
@@ -71,8 +71,8 @@ class UserService {
 ### Multi-Operations with @MultiCache
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
+import { MultiCache, ExpirationStrategy } from '@node-ts-cache/core';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);

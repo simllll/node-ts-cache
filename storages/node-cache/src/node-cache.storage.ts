@@ -1,4 +1,4 @@
-import type { ISynchronousCacheType, IMultiSynchronousCacheType } from '@hokify/node-ts-cache';
+import type { ISynchronousCacheType, IMultiSynchronousCacheType } from '@node-ts-cache/core';
 
 import NodeCache from 'node-cache';
 

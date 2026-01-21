@@ -1,4 +1,4 @@
-import { IAsynchronousCacheType, IMultiIAsynchronousCacheType } from '@hokify/node-ts-cache';
+import { IAsynchronousCacheType, IMultiIAsynchronousCacheType } from '@node-ts-cache/core';
 import * as Redis from 'ioredis';
 import * as snappy from 'snappy';
 

@@ -1,8 +1,8 @@
-# @hokify/node-ts-cache-lru-storage
+# @node-ts-cache/lru-storage
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-storage.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache-lru-storage)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-storage.svg)](https://www.npmjs.org/package/@node-ts-cache/lru-storage)
 
-LRU (Least Recently Used) cache storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/package/@hokify/node-ts-cache) using [lru-cache](https://www.npmjs.com/package/lru-cache).
+LRU (Least Recently Used) cache storage adapter for [@node-ts-cache/core](https://www.npmjs.com/package/@node-ts-cache/core) using [lru-cache](https://www.npmjs.com/package/lru-cache).
 
 ## Features
 
@@ -16,7 +16,7 @@ LRU (Least Recently Used) cache storage adapter for [@hokify/node-ts-cache](http
 ## Installation
 
 ```bash
-npm install @hokify/node-ts-cache @hokify/node-ts-cache-lru-storage
+npm install @node-ts-cache/core @node-ts-cache/lru-storage
 ```
 
 ## Usage
@@ -24,8 +24,8 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-lru-storage
 ### Basic Usage
 
 ```typescript
-import { SyncCache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import LRUStorage from '@hokify/node-ts-cache-lru-storage';
+import { SyncCache, ExpirationStrategy } from '@node-ts-cache/core';
+import LRUStorage from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({
 	max: 500 // Maximum 500 items
@@ -67,8 +67,8 @@ const storage = new LRUStorage({
 ### Async Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import LRUStorage from '@hokify/node-ts-cache-lru-storage';
+import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
+import LRUStorage from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({ max: 1000 });
 const strategy = new ExpirationStrategy(storage);
@@ -84,8 +84,8 @@ class UserService {
 ### Multi-Operations
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import LRUStorage from '@hokify/node-ts-cache-lru-storage';
+import { MultiCache, ExpirationStrategy } from '@node-ts-cache/core';
+import LRUStorage from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({ max: 1000 });
 const strategy = new ExpirationStrategy(storage);
