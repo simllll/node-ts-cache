@@ -1,19 +1,10 @@
-//import * as Assert from "assert";
+import * as Assert from 'assert';
 import { MultiCache, IMultiCacheKeyStrategy } from '../src/decorator/multicache.decorator.js';
 import { LRUStorage } from '../../storages/lru/src/LRUStorage.js';
-
-const canonicalLRUStrategy = new LRUStorage({ max: 500 });
 
 // @ts-ignore
 import RedisMock from 'ioredis-mock';
 import { RedisIOStorage } from '../../storages/redisio/src/redisio.storage.js';
-
-const MockedRedis = new RedisMock({
-	host: 'host',
-	port: 123,
-	password: 'pass'
-});
-const canonicalRedisStrategy = new RedisIOStorage(() => MockedRedis);
 
 interface UrlEntry {
 	path: string;
@@ -30,45 +21,93 @@ const canonicalKeyStrategy: IMultiCacheKeyStrategy = {
 	): string {
 		const param = parameter as UrlEntry;
 		const geoRegion = args[1] as string;
-		// args[1] = geoRegion
 		return `{canonicalurl:${geoRegion.toUpperCase()}}:${param.pageType}:${param.path}:${
 			process.env.NODE_ENV || 'local'
 		}`;
 	}
 };
 
-class TestClassOne {
-	callCount = 0;
-
-	@MultiCache([canonicalLRUStrategy, canonicalRedisStrategy], 0, canonicalKeyStrategy)
-	public async getCanonicalUrlsFromCache(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
-		console.log('getCanonicalUrlsFromCache', urls, geoRegion);
-		return urls.map(p => {
-			return p.path + 'RETURN VALUE' + geoRegion;
-		});
-	}
-}
-
 describe('MultiCacheDecorator', () => {
+	let lruStorage: LRUStorage;
+	let redisStorage: RedisIOStorage;
+
 	beforeEach(async () => {
-		// await storage.clear();
-		// await storage2.clear();
+		lruStorage = new LRUStorage({ max: 500 });
+		const MockedRedis = new RedisMock({
+			host: 'host',
+			port: 123,
+			password: 'pass'
+		});
+		redisStorage = new RedisIOStorage(() => MockedRedis);
+		await lruStorage.clear();
+		await redisStorage.clear();
 	});
 
-	it('Should multi cache', async () => {
-		const myClass = new TestClassOne();
-		// call 1
-		const call1 = await myClass.getCanonicalUrlsFromCache(
-			[
-				{ path: 'elem1', pageType: 'x' },
-				{ path: 'elem2', pageType: 'x' },
-				{ path: 'elem3', pageType: 'x' }
-			],
-			'at'
-		);
-		console.log('CALL RESULT 1', call1);
+	it('Should cache items across multiple storage layers', async () => {
+		class TestClass {
+			callCount = 0;
 
-		const call2 = await myClass.getCanonicalUrlsFromCache(
+			@MultiCache([lruStorage, redisStorage], 0, canonicalKeyStrategy)
+			public async getUrls(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
+				this.callCount++;
+				return urls.map(p => p.path + 'RETURN' + geoRegion);
+			}
+		}
+
+		const myClass = new TestClass();
+
+		const call1 = await myClass.getUrls(
+			[
+				{ path: 'elem1', pageType: 'x' },
+				{ path: 'elem2', pageType: 'x' }
+			],
+			'at'
+		);
+
+		Assert.deepStrictEqual(call1, ['elem1RETURNat', 'elem2RETURNat']);
+		Assert.strictEqual(myClass.callCount, 1);
+
+		// Second call should use cache
+		const call2 = await myClass.getUrls(
+			[
+				{ path: 'elem1', pageType: 'x' },
+				{ path: 'elem2', pageType: 'x' }
+			],
+			'at'
+		);
+
+		Assert.deepStrictEqual(call2, ['elem1RETURNat', 'elem2RETURNat']);
+		Assert.strictEqual(myClass.callCount, 1);
+	});
+
+	it('Should handle partial cache hits', async () => {
+		class TestClass {
+			callCount = 0;
+			calledWith: UrlEntry[][] = [];
+
+			@MultiCache([lruStorage, redisStorage], 0, canonicalKeyStrategy)
+			public async getUrls(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
+				this.callCount++;
+				this.calledWith.push([...urls]);
+				return urls.map(p => p.path + 'RETURN' + geoRegion);
+			}
+		}
+
+		const myClass = new TestClass();
+
+		// First call with elem1, elem2
+		await myClass.getUrls(
+			[
+				{ path: 'elem1', pageType: 'x' },
+				{ path: 'elem2', pageType: 'x' }
+			],
+			'at'
+		);
+
+		Assert.strictEqual(myClass.callCount, 1);
+
+		// Second call with elem1, elem2, elem3 - elem1 and elem2 should be cached
+		const call2 = await myClass.getUrls(
 			[
 				{ path: 'elem1', pageType: 'x' },
 				{ path: 'elem2', pageType: 'x' },
@@ -76,6 +115,241 @@ describe('MultiCacheDecorator', () => {
 			],
 			'at'
 		);
-		console.log('CALL RESULT 2', call2);
+
+		Assert.strictEqual(myClass.callCount, 2);
+		// Should only have been called with elem3
+		Assert.deepStrictEqual(myClass.calledWith[1], [{ path: 'elem3', pageType: 'x' }]);
+		Assert.strictEqual(call2.length, 3);
+	});
+
+	it('Should handle different geo regions separately', async () => {
+		class TestClass {
+			callCount = 0;
+
+			@MultiCache([lruStorage, redisStorage], 0, canonicalKeyStrategy)
+			public async getUrls(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
+				this.callCount++;
+				return urls.map(p => p.path + 'RETURN' + geoRegion);
+			}
+		}
+
+		const myClass = new TestClass();
+
+		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
+		Assert.strictEqual(myClass.callCount, 1);
+
+		// Different region should trigger new call
+		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'de');
+		Assert.strictEqual(myClass.callCount, 2);
+
+		// Same region should use cache
+		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
+		Assert.strictEqual(myClass.callCount, 2);
+	});
+
+	it('Should throw error when input and output sizes mismatch', async () => {
+		class TestClass {
+			@MultiCache([lruStorage, redisStorage], 0, canonicalKeyStrategy)
+			public async getUrls(urls: UrlEntry[], _geoRegion: string): Promise<string[]> {
+				// Intentionally return wrong number of items
+				return urls.slice(0, 1).map(p => p.path);
+			}
+		}
+
+		const myClass = new TestClass();
+
+		await Assert.rejects(
+			async () => {
+				await myClass.getUrls(
+					[
+						{ path: 'elem1', pageType: 'x' },
+						{ path: 'elem2', pageType: 'x' },
+						{ path: 'elem3', pageType: 'x' }
+					],
+					'at'
+				);
+			},
+			{
+				message: /input and output has different size/
+			}
+		);
+	});
+
+	it('Should use default key strategy when none provided', async () => {
+		class TestClassDefault {
+			callCount = 0;
+
+			@MultiCache([lruStorage])
+			public async getItems(ids: number[]): Promise<string[]> {
+				this.callCount++;
+				return ids.map(id => `item_${id}`);
+			}
+		}
+
+		const myClass = new TestClassDefault();
+
+		const result1 = await myClass.getItems([1, 2, 3]);
+		Assert.deepStrictEqual(result1, ['item_1', 'item_2', 'item_3']);
+		Assert.strictEqual(myClass.callCount, 1);
+
+		const result2 = await myClass.getItems([1, 2, 3]);
+		Assert.deepStrictEqual(result2, ['item_1', 'item_2', 'item_3']);
+		Assert.strictEqual(myClass.callCount, 1);
+	});
+
+	it('Should handle empty input array', async () => {
+		class TestClass {
+			callCount = 0;
+
+			@MultiCache([lruStorage, redisStorage], 0, canonicalKeyStrategy)
+			public async getUrls(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
+				this.callCount++;
+				return urls.map(p => p.path + 'RETURN' + geoRegion);
+			}
+		}
+
+		const myClass = new TestClass();
+
+		const result = await myClass.getUrls([], 'at');
+		Assert.deepStrictEqual(result, []);
+		Assert.strictEqual(myClass.callCount, 0);
+	});
+
+	describe('DISABLE_CACHE_DECORATOR environment variable', () => {
+		afterEach(() => {
+			delete process.env.DISABLE_CACHE_DECORATOR;
+		});
+
+		it('Should skip caching when DISABLE_CACHE_DECORATOR is set', async () => {
+			process.env.DISABLE_CACHE_DECORATOR = 'true';
+
+			const testLru = new LRUStorage({ max: 500 });
+
+			class TestClass {
+				callCount = 0;
+
+				@MultiCache([testLru], 0, canonicalKeyStrategy)
+				public async getUrls(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
+					this.callCount++;
+					return urls.map(p => p.path + 'RETURN' + geoRegion);
+				}
+			}
+
+			const myClass = new TestClass();
+
+			await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
+			await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
+			await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
+
+			// Should call method every time when cache is disabled
+			Assert.strictEqual(myClass.callCount, 3);
+		});
+	});
+
+	describe('Custom key strategy that returns undefined', () => {
+		it('Should not call method when all keys are undefined (no cacheable items)', async () => {
+			const undefinedKeyStrategy: IMultiCacheKeyStrategy = {
+				getKey(): string | undefined {
+					return undefined;
+				}
+			};
+
+			class TestClass {
+				callCount = 0;
+
+				@MultiCache([lruStorage], 0, undefinedKeyStrategy)
+				public async getItems(ids: number[]): Promise<string[]> {
+					this.callCount++;
+					return ids.map(id => `item_${id}`);
+				}
+			}
+
+			const myClass = new TestClass();
+
+			// When all keys return undefined, the method is not called
+			// because there are no "missing" cacheable items to fetch
+			const result = await myClass.getItems([1, 2]);
+			Assert.deepStrictEqual(result, []);
+			Assert.strictEqual(myClass.callCount, 0);
+		});
+
+		it('Should handle mixed undefined and valid keys', async () => {
+			const mixedKeyStrategy: IMultiCacheKeyStrategy = {
+				getKey(
+					className: string,
+					methodName: string,
+					parameter: unknown,
+					_args: unknown[],
+					_phase: 'read' | 'write'
+				): string | undefined {
+					// Only return a key for even numbers
+					const num = parameter as number;
+					if (num % 2 === 0) {
+						return `${className}:${methodName}:${num}`;
+					}
+					return undefined;
+				}
+			};
+
+			class TestClass {
+				callCount = 0;
+				calledWith: number[][] = [];
+
+				@MultiCache([lruStorage], 0, mixedKeyStrategy)
+				public async getItems(ids: number[]): Promise<string[]> {
+					this.callCount++;
+					this.calledWith.push([...ids]);
+					return ids.map(id => `item_${id}`);
+				}
+			}
+
+			const myClass = new TestClass();
+
+			// First call with [1, 2, 3, 4]
+			// - Keys for 1, 3 return undefined (skipped)
+			// - Keys for 2, 4 are cacheable
+			const result = await myClass.getItems([1, 2, 3, 4]);
+
+			// Method should be called with only the cacheable items [2, 4]
+			Assert.strictEqual(myClass.callCount, 1);
+			Assert.deepStrictEqual(myClass.calledWith[0], [2, 4]);
+			Assert.deepStrictEqual(result, ['item_2', 'item_4']);
+		});
+	});
+
+	describe('Different parameter index', () => {
+		it('Should use custom parameter index', async () => {
+			const simpleKeyStrategy: IMultiCacheKeyStrategy = {
+				getKey(
+					className: string,
+					methodName: string,
+					parameter: unknown,
+					_args: unknown[],
+					_phase: 'read' | 'write'
+				): string {
+					return `${className}:${methodName}:${JSON.stringify(parameter)}`;
+				}
+			};
+
+			class TestClass {
+				callCount = 0;
+
+				@MultiCache([lruStorage], 1, simpleKeyStrategy)
+				public async processData(prefix: string, items: number[]): Promise<string[]> {
+					this.callCount++;
+					return items.map(item => `${prefix}_${item}`);
+				}
+			}
+
+			const myClass = new TestClass();
+
+			const result1 = await myClass.processData('test', [1, 2, 3]);
+			Assert.deepStrictEqual(result1, ['test_1', 'test_2', 'test_3']);
+			Assert.strictEqual(myClass.callCount, 1);
+
+			const result2 = await myClass.processData('test', [1, 2, 3]);
+			Assert.deepStrictEqual(result2, ['test_1', 'test_2', 'test_3']);
+			Assert.strictEqual(myClass.callCount, 1);
+		});
 	});
 });

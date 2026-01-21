@@ -268,4 +268,231 @@ describe('CacheDecorator', () => {
 			Assert.strictEqual(await strategy.getItem<string[]>('getUsersPromise'), data);
 		});
 	});
+
+	describe('DISABLE_CACHE_DECORATOR environment variable', () => {
+		afterEach(() => {
+			delete process.env.DISABLE_CACHE_DECORATOR;
+		});
+
+		it('Should skip caching when DISABLE_CACHE_DECORATOR is set', async () => {
+			process.env.DISABLE_CACHE_DECORATOR = 'true';
+
+			const disableStorage = new MemoryStorage();
+			const disableStrategy = new ExpirationStrategy(disableStorage);
+
+			class TestClassDisabled {
+				callCount = 0;
+
+				@Cache(disableStrategy, { ttl: 1000 })
+				public getUsers(): string[] {
+					this.callCount++;
+					return data;
+				}
+			}
+
+			const myClass = new TestClassDisabled();
+
+			await myClass.getUsers();
+			await myClass.getUsers();
+			await myClass.getUsers();
+
+			// Method should be called every time when cache is disabled
+			Assert.strictEqual(myClass.callCount, 3);
+		});
+
+		it('Should work normally when DISABLE_CACHE_DECORATOR is not set', async () => {
+			delete process.env.DISABLE_CACHE_DECORATOR;
+
+			const normalStorage = new MemoryStorage();
+			const normalStrategy = new ExpirationStrategy(normalStorage);
+
+			class TestClassNormal {
+				callCount = 0;
+
+				@Cache(normalStrategy, { ttl: 1000 })
+				public getUsers(): string[] {
+					this.callCount++;
+					return data;
+				}
+			}
+
+			const myClass = new TestClassNormal();
+
+			await myClass.getUsers();
+			await myClass.getUsers();
+			await myClass.getUsers();
+
+			// Method should be called only once when caching is enabled
+			Assert.strictEqual(myClass.callCount, 1);
+		});
+	});
+
+	describe('Cache error handling', () => {
+		it('Should handle cache read errors gracefully', async () => {
+			const failingStorage = {
+				getItem: () => {
+					throw new Error('Read error');
+				},
+				setItem: async () => {},
+				clear: async () => {}
+			};
+			const failStrategy = new ExpirationStrategy(failingStorage as unknown as MemoryStorage);
+
+			class TestClassReadFail {
+				callCount = 0;
+
+				@Cache(failStrategy, { ttl: 1000 })
+				public getUsers(): string[] {
+					this.callCount++;
+					return data;
+				}
+			}
+
+			const myClass = new TestClassReadFail();
+
+			// Should not throw, just log warning and continue
+			const result = await myClass.getUsers();
+			Assert.deepStrictEqual(result, data);
+		});
+
+		it('Should handle cache write errors gracefully', async () => {
+			const failingStorage = {
+				getItem: async () => undefined,
+				setItem: async () => {
+					throw new Error('Write error');
+				},
+				clear: async () => {}
+			};
+			const failStrategy = new ExpirationStrategy(failingStorage as unknown as MemoryStorage);
+
+			class TestClassWriteFail {
+				callCount = 0;
+
+				@Cache(failStrategy, { ttl: 1000 })
+				public getUsers(): string[] {
+					this.callCount++;
+					return data;
+				}
+			}
+
+			const myClass = new TestClassWriteFail();
+
+			// Should not throw, just log warning and continue
+			const result = await myClass.getUsers();
+			Assert.deepStrictEqual(result, data);
+		});
+	});
+
+	describe('Different argument types', () => {
+		const argStorage = new MemoryStorage();
+		const argStrategy = new ExpirationStrategy(argStorage);
+
+		beforeEach(async () => {
+			await argStrategy.clear();
+		});
+
+		class TestClassArgs {
+			callCount = 0;
+
+			@Cache(argStrategy, { ttl: 1000 })
+			public getWithArgs(...args: unknown[]): unknown[] {
+				this.callCount++;
+				return args;
+			}
+		}
+
+		it('Should cache with object arguments', async () => {
+			const myClass = new TestClassArgs();
+			const arg = { id: 1, name: 'test' };
+
+			await myClass.getWithArgs(arg);
+			await myClass.getWithArgs(arg);
+
+			Assert.strictEqual(myClass.callCount, 1);
+		});
+
+		it('Should cache with array arguments', async () => {
+			const myClass = new TestClassArgs();
+			const arg = [1, 2, 3];
+
+			await myClass.getWithArgs(arg);
+			await myClass.getWithArgs(arg);
+
+			Assert.strictEqual(myClass.callCount, 1);
+		});
+
+		it('Should differentiate between different arguments', async () => {
+			const myClass = new TestClassArgs();
+
+			await myClass.getWithArgs(1);
+			await myClass.getWithArgs(2);
+			await myClass.getWithArgs(3);
+
+			Assert.strictEqual(myClass.callCount, 3);
+		});
+
+		it('Should cache with multiple arguments', async () => {
+			const myClass = new TestClassArgs();
+
+			await myClass.getWithArgs('a', 1, true);
+			await myClass.getWithArgs('a', 1, true);
+
+			Assert.strictEqual(myClass.callCount, 1);
+		});
+	});
+
+	describe('Error propagation', () => {
+		it('Should propagate errors from decorated method', async () => {
+			const errorStorage = new MemoryStorage();
+			const errorStrategy = new ExpirationStrategy(errorStorage);
+
+			class TestClassError {
+				@Cache(errorStrategy, { ttl: 1000 })
+				public async throwingMethod(): Promise<string> {
+					throw new Error('Test error');
+				}
+			}
+
+			const myClass = new TestClassError();
+
+			await Assert.rejects(
+				async () => {
+					await myClass.throwingMethod();
+				},
+				{ message: 'Test error' }
+			);
+		});
+
+		it('Should not cache failed method calls', async () => {
+			const errorStorage = new MemoryStorage();
+			const errorStrategy = new ExpirationStrategy(errorStorage);
+
+			class TestClassErrorCount {
+				callCount = 0;
+
+				@Cache(errorStrategy, { ttl: 1000 })
+				public async throwingMethod(): Promise<string> {
+					this.callCount++;
+					throw new Error('Test error');
+				}
+			}
+
+			const myClass = new TestClassErrorCount();
+
+			try {
+				await myClass.throwingMethod();
+			} catch {
+				// Expected
+			}
+
+			try {
+				await myClass.throwingMethod();
+			} catch {
+				// Expected
+			}
+
+			// Each call should execute since errors are not cached
+			Assert.strictEqual(myClass.callCount, 2);
+		});
+	});
 });
