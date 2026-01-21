@@ -4,22 +4,17 @@ on:
   workflow_dispatch:
     inputs:
       version_type:
-        description: 'Version bump type'
+        description: 'Version bump type (auto = determined by conventional commits)'
         required: true
-        default: 'patch'
+        default: 'auto'
         type: choice
         options:
+          - auto
           - patch
           - minor
           - major
-          - prerelease
-      prerelease_id:
-        description: 'Prerelease identifier (e.g., alpha, beta, rc) - only used with prerelease'
-        required: false
-        default: ''
-        type: string
       dry_run:
-        description: 'Dry run (no actual publish, just preview)'
+        description: 'Dry run (preview changes without publishing)'
         required: false
         default: false
         type: boolean
@@ -81,15 +76,24 @@ jobs:
           echo "=== DRY RUN MODE ==="
           echo ""
           echo "Version type: ${{ inputs.version_type }}"
-          if [ -n "${{ inputs.prerelease_id }}" ]; then
-            echo "Prerelease ID: ${{ inputs.prerelease_id }}"
+          if [ "${{ inputs.version_type }}" == "auto" ]; then
+            echo "  (auto = determined by conventional commits)"
+            echo "  - fix: commits → patch bump"
+            echo "  - feat: commits → minor bump"
+            echo "  - BREAKING CHANGE → major bump"
           fi
           echo ""
           echo "=== Changed packages ==="
           npx lerna changed -l || echo "No packages changed"
           echo ""
-          echo "=== What would be published ==="
-          npx lerna version ${{ inputs.version_type }} --no-git-tag-version --no-push --yes 2>/dev/null || true
+          echo "=== Preview version bumps ==="
+          VERSION_ARG=""
+          if [ "${{ inputs.version_type }}" != "auto" ]; then
+            VERSION_ARG="${{ inputs.version_type }}"
+          fi
+          npx lerna version $VERSION_ARG --conventional-commits --no-git-tag-version --no-push --yes 2>/dev/null || true
+          echo ""
+          echo "=== Files that would change ==="
           git diff --name-only
           git checkout -- .
 
@@ -97,26 +101,24 @@ jobs:
         if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
         id: version
         run: |
-          PREID_ARG=""
-          if [ -n "${{ inputs.prerelease_id }}" ]; then
-            PREID_ARG="--preid ${{ inputs.prerelease_id }}"
+          # Determine version argument (empty for auto = let conventional commits decide)
+          VERSION_ARG=""
+          if [ "${{ inputs.version_type }}" != "auto" ]; then
+            VERSION_ARG="${{ inputs.version_type }}"
           fi
 
           # Version packages with conventional commits
-          npx lerna version ${{ inputs.version_type }} \
+          # When VERSION_ARG is empty (auto), lerna uses conventional commits to determine version:
+          # fix: → patch, feat: → minor, BREAKING CHANGE → major
+          npx lerna version $VERSION_ARG \
             --yes \
             --conventional-commits \
             --changelog-preset angular \
-            --message "chore(release): publish %s" \
-            $PREID_ARG
+            --message "chore(release): publish"
 
           # Get the new version for release notes
           NEW_VERSION=$(node -p "require('./lerna.json').version || 'independent'")
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-          # Get list of published packages for release notes
-          PACKAGES=$(npx lerna ls --json | jq -r '.[].name' | tr '\n' ', ' | sed 's/,$//')
-          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -183,17 +185,10 @@ jobs:
           # Get the latest tag created by lerna
           LATEST_TAG=$(git describe --tags --abbrev=0)
 
-          # Determine if this is a prerelease
-          PRERELEASE_FLAG=""
-          if [ -n "${{ inputs.prerelease_id }}" ]; then
-            PRERELEASE_FLAG="--prerelease"
-          fi
-
           # Create the GitHub release
           gh release create "$LATEST_TAG" \
             --title "Release $LATEST_TAG" \
-            --notes-file release_notes.md \
-            $PRERELEASE_FLAG
+            --notes-file release_notes.md
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
