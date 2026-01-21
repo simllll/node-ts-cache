@@ -1,5 +1,5 @@
 //import * as Assert from "assert";
-import { MultiCache } from '../src/decorator/multicache.decorator.js';
+import { MultiCache, IMultiCacheKeyStrategy } from '../src/decorator/multicache.decorator.js';
 import { LRUStorage } from '../../storages/lru/src/LRUStorage.js';
 
 const canonicalLRUStrategy = new LRUStorage({});
@@ -15,27 +15,33 @@ const MockedRedis = new RedisMock({
 });
 const canonicalRedisStrategy = new RedisIOStorage(() => MockedRedis);
 
+interface UrlEntry {
+	path: string;
+	pageType: string;
+}
+
+const canonicalKeyStrategy: IMultiCacheKeyStrategy = {
+	getKey(
+		_className: string,
+		_methodName: string,
+		parameter: unknown,
+		args: unknown[],
+		_phase: 'read' | 'write'
+	): string {
+		const param = parameter as UrlEntry;
+		const geoRegion = args[1] as string;
+		// args[1] = geoRegion
+		return `{canonicalurl:${geoRegion.toUpperCase()}}:${param.pageType}:${param.path}:${
+			process.env.NODE_ENV || 'local'
+		}`;
+	}
+};
+
 class TestClassOne {
 	callCount = 0;
 
-	@MultiCache([canonicalLRUStrategy, canonicalRedisStrategy], 0, {
-		getKey(
-			_className: string,
-			_methodName: string,
-			parameter: any,
-			args: any,
-			_phase: 'read' | 'write'
-		): string {
-			// args[1] = geoRegion
-			return `{canonicalurl:${args[1].toUpperCase()}}:${parameter.pageType}:${parameter.path}:${
-				process.env.NODE_ENV || 'local'
-			}`;
-		}
-	})
-	public async getCanonicalUrlsFromCache(
-		urls: { path: string; pageType: any }[],
-		geoRegion: string
-	): Promise<string[]> {
+	@MultiCache([canonicalLRUStrategy, canonicalRedisStrategy], 0, canonicalKeyStrategy)
+	public async getCanonicalUrlsFromCache(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
 		console.log('getCanonicalUrlsFromCache', urls, geoRegion);
 		return urls.map(p => {
 			return p.path + 'RETURN VALUE' + geoRegion;

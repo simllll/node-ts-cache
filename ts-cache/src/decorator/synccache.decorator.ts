@@ -1,12 +1,12 @@
 import { JSONStringifyKeyStrategy } from '../strategy/key/json.stringify.strategy.js';
 import { ISyncKeyStrategy } from '../types/key.strategy.types.js';
-import { ISynchronousCacheType } from '../types/cache.types.js';
+import { ISynchronousCacheType, ICacheOptions } from '../types/cache.types.js';
 
 const defaultKeyStrategy = new JSONStringifyKeyStrategy();
 
 export function SyncCache(
 	cachingStrategy: ISynchronousCacheType,
-	options?: any,
+	options?: ICacheOptions,
 	keyStrategy: ISyncKeyStrategy = defaultKeyStrategy
 ) {
 	// eslint-disable-next-line @typescript-eslint/ban-types
@@ -14,7 +14,7 @@ export function SyncCache(
 		const originalMethod = descriptor.value;
 		const className = target.constructor.name;
 
-		descriptor.value = function (...args: any[]) {
+		descriptor.value = function (...args: unknown[]) {
 			const runMethod = () => {
 				const methodResult = originalMethod.apply(this, args);
 

@@ -77,7 +77,7 @@ class TestClassTwo {
 }
 
 class CustomJsonStrategy implements ISyncKeyStrategy {
-	public getKey(className: string, methodName: string, args: any[]): string {
+	public getKey(className: string, methodName: string, args: unknown[]): string {
 		return `${className}:${methodName}:${JSON.stringify(args)}:foo`;
 	}
 }
@@ -86,7 +86,11 @@ class CustomJsonStrategy implements ISyncKeyStrategy {
  * This custom test key strategy only uses the method name as caching key
  */
 class CustomKeyStrategy implements IAsyncKeyStrategy {
-	public getKey(_className: string, methodName: string, _args: any[]): Promise<string> | string {
+	public getKey(
+		_className: string,
+		methodName: string,
+		_args: unknown[]
+	): Promise<string> | string {
 		return new Promise(resolve => {
 			setTimeout(() => resolve(methodName), 0);
 		});
@@ -210,8 +214,8 @@ describe('CacheDecorator', () => {
 
 		try {
 			await myClass.throwError();
-		} catch (err: any) {
-			console.log(err.stack);
+		} catch (err: unknown) {
+			console.log((err as Error).stack);
 		}
 	});
 
@@ -220,8 +224,8 @@ describe('CacheDecorator', () => {
 
 		try {
 			await myClass.throwErrorNoCache();
-		} catch (err: any) {
-			console.log(err.stack);
+		} catch (err: unknown) {
+			console.log((err as Error).stack);
 		}
 	});
 
@@ -230,8 +234,8 @@ describe('CacheDecorator', () => {
 
 		try {
 			await myClass.throwErrorPlain();
-		} catch (err: any) {
-			console.log(err.stack);
+		} catch (err: unknown) {
+			console.log((err as Error).stack);
 		}
 	});
 

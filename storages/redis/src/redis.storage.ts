@@ -15,27 +15,32 @@ export class RedisStorage implements IAsynchronousCacheType {
 		this.client = redis.createClient(this.redisOptions) as IRedisClient;
 	}
 
-	public async getItem<T>(key: string): Promise<T> {
-		const entry: any = await this.client.getAsync(key);
-		let finalItem = entry;
-		try {
-			finalItem = JSON.parse(entry);
-		} catch (error) {
-			/** ignore */
+	public async getItem<T>(key: string): Promise<T | undefined> {
+		const entry: string | null = await this.client.getAsync(key);
+		if (entry === null) {
+			return undefined;
 		}
-		return finalItem || undefined;
+		// Try to parse as JSON, fallback to raw string
+		let parsedItem: T | string = entry;
+		try {
+			parsedItem = JSON.parse(entry) as T;
+		} catch (error) {
+			/** Not JSON, keep as string */
+		}
+		return parsedItem as T | undefined;
 	}
 
-	public async setItem(key: string, content: any): Promise<void> {
-		if (typeof content === 'object') {
-			content = JSON.stringify(content);
-		} else if (content === undefined) {
-			return this.client.delAsync(key);
+	public async setItem<T = unknown>(key: string, content: T | undefined): Promise<void> {
+		if (content === undefined) {
+			await this.client.delAsync(key);
+			return;
 		}
-		return this.client.setAsync(key, content);
+		const stringContent: string =
+			typeof content === 'object' ? JSON.stringify(content) : String(content);
+		await this.client.setAsync(key, stringContent);
 	}
 
 	public async clear(): Promise<void> {
-		return this.client.flushdbAsync();
+		await this.client.flushdbAsync();
 	}
 }

@@ -18,32 +18,37 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 	}
 
 	async getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }> {
-		const mget = this.options.compress
-			? await (this.redis() as any).mgetBuffer(...keys)
+		const mget: (Buffer | string | null)[] = this.options.compress
+			? await this.redis().mgetBuffer(...keys)
 			: await this.redis().mget(...keys);
 		const res = Object.fromEntries(
 			await Promise.all(
-				mget.map(async (entry: Buffer | string, i: number) => {
+				mget.map(async (entry: Buffer | string | null, i: number) => {
 					if (entry === null) {
 						return [keys[i], undefined]; // value does not exist yet
 					}
 
 					if (entry === '') {
-						return [keys[i], null as any]; // value does exist, but is empty
+						return [keys[i], null]; // value does exist, but is empty
 					}
 
-					let finalItem: string =
+					// Decompress if needed, result is a string
+					const stringValue: string =
 						entry && this.options.compress
 							? await this.uncompress(entry as Buffer)
 							: (entry as string);
 
+					// Try to parse as JSON
+					let parsedItem: T | string = stringValue;
 					try {
-						finalItem = finalItem && JSON.parse(finalItem);
+						if (stringValue) {
+							parsedItem = JSON.parse(stringValue) as T;
+						}
 					} catch (error) {
-						/** ignore */
+						/** Not JSON, keep as string */
 					}
 
-					return [keys[i], finalItem];
+					return [keys[i], parsedItem];
 				})
 			)
 		);
@@ -61,8 +66,8 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 		return result.toString();
 	}
 
-	async setItems(
-		values: { key: string; content: any }[],
+	async setItems<T = unknown>(
+		values: { key: string; content: T | undefined }[],
 		options?: { ttl?: number }
 	): Promise<void> {
 		const redisPipeline = this.redis().pipeline();
@@ -95,45 +100,53 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 	}
 
 	public async getItem<T>(key: string): Promise<T | undefined> {
-		const entry = this.options.compress
+		const entry: Buffer | string | null = this.options.compress
 			? await this.redis().getBuffer(key)
 			: await this.redis().get(key);
 		if (entry === null) {
 			return undefined;
 		}
 		if (entry === '') {
-			return null as any;
+			return null as T; // value exists but is empty
 		}
-		let finalItem: string =
+
+		// Decompress if needed, result is a string
+		const stringValue: string =
 			entry && this.options.compress ? await this.uncompress(entry as Buffer) : (entry as string);
 
+		// Try to parse as JSON
+		let parsedItem: T | string = stringValue;
 		try {
-			finalItem = JSON.parse(finalItem);
+			parsedItem = JSON.parse(stringValue) as T;
 		} catch (error) {
-			/** ignore */
+			/** Not JSON, keep as string */
 		}
-		return finalItem as unknown as T;
+		return parsedItem as T;
 	}
 
-	public async setItem(key: string, content: unknown, options?: { ttl?: number }): Promise<void> {
-		if (typeof content === 'object') {
-			content = JSON.stringify(content);
-		} else if (content === undefined) {
+	public async setItem<T = unknown>(
+		key: string,
+		content: T | undefined,
+		options?: { ttl?: number }
+	): Promise<void> {
+		if (content === undefined) {
 			await this.redis().del(key);
 			return;
 		}
 
+		// Serialize to string, then optionally compress
+		let serialized: string | Buffer =
+			typeof content === 'object' ? JSON.stringify(content) : String(content);
+
 		if (this.options.compress) {
-			content = await this.compress(content as string);
+			serialized = await this.compress(serialized);
 		}
 
 		const ttl = options?.ttl ?? this.options.maxAge;
-		let savePromise: Promise<any>;
-		if (ttl) {
-			savePromise = this.redis().setex(key, ttl, content as Buffer | string);
-		} else {
-			savePromise = this.redis().set(key, content as Buffer | string);
-		}
+		const savePromise: Promise<'OK' | null> = ttl
+			? this.redis().setex(key, ttl, serialized)
+			: this.redis().set(key, serialized);
+
 		if (this.errorHandler) {
 			// if we have an error handler, we do not need to await the result
 			savePromise.catch(err => this.errorHandler && this.errorHandler(err));

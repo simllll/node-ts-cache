@@ -83,7 +83,7 @@ describe('RedisIOStorage', () => {
 		});
 
 		it('Mutli Should set and retrieve item correclty', async () => {
-			await storage.setItems([
+			await storage.setItems<{ asdf: number } | string>([
 				{ key: 'test', content: { asdf: 2 } },
 				{ key: 'test2', content: '2' }
 			]);

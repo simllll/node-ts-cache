@@ -1,14 +1,18 @@
 import { AbstractBaseStrategy } from './abstract.base.strategy.js';
+import { ICacheOptions } from '../../types/cache.types.js';
 
-interface IExpiringCacheItem {
-	content: any;
-	meta: {
-		createdAt: number;
-		ttl: number;
-	};
+interface IExpiringCacheItemMeta {
+	createdAt: number;
+	ttl: number;
 }
 
-interface IOptions {
+interface IExpiringCacheItem<T = unknown> {
+	content: T;
+	meta: IExpiringCacheItemMeta | false;
+}
+
+/** Internal options with required fields after merging with defaults */
+interface IExpirationOptions {
 	ttl: number;
 	isLazy: boolean;
 	isCachedForever: boolean;
@@ -16,16 +20,27 @@ interface IOptions {
 
 export class ExpirationStrategy extends AbstractBaseStrategy {
 	public async getItem<T>(key: string): Promise<T | undefined> {
-		const item: IExpiringCacheItem | undefined = await (this.storage.getItem as any)(key); // <IExpiringCacheItem>
-		if (item && item.meta && item.meta.ttl && this.isItemExpired(item)) {
+		const item = await this.storage.getItem<IExpiringCacheItem<T>>(key);
+		if (item && this.hasValidMeta(item) && this.isItemExpired(item)) {
 			await this.storage.setItem(key, undefined);
 			return undefined;
 		}
 		return item ? item.content : undefined;
 	}
 
-	public async setItem(key: string, content: any, options: Partial<IOptions>): Promise<void> {
-		const mergedOptions: IOptions = {
+	/** Type guard to check if item has valid meta with ttl */
+	private hasValidMeta(
+		item: IExpiringCacheItem<unknown>
+	): item is IExpiringCacheItem<unknown> & { meta: IExpiringCacheItemMeta } {
+		return item.meta !== false && typeof item.meta.ttl === 'number';
+	}
+
+	public async setItem<T = unknown>(
+		key: string,
+		content: T | undefined,
+		options?: ICacheOptions
+	): Promise<void> {
+		const mergedOptions: IExpirationOptions = {
 			ttl: 60,
 			isLazy: true,
 			isCachedForever: false,
@@ -49,7 +64,7 @@ export class ExpirationStrategy extends AbstractBaseStrategy {
 		await this.storage.clear();
 	}
 
-	private isItemExpired(item: IExpiringCacheItem): boolean {
+	private isItemExpired(item: { meta: IExpiringCacheItemMeta }): boolean {
 		return Date.now() > item.meta.createdAt + item.meta.ttl;
 	}
 

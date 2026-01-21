@@ -4,12 +4,12 @@ import LRU from 'lru-cache';
 import * as Redis from 'ioredis';
 
 export class LRUWithRedisStorage implements IAsynchronousCacheType {
-	private myCache: LRU<string, any>;
+	private myCache: LRU<string, unknown>;
 
 	/** maxAge and ttl in seconds! */
-	private options: LRU.Options<string, any>;
+	private options: LRU.Options<string, unknown>;
 
-	constructor(options: LRU.Options<string, any>, private redis: () => Redis.Redis) {
+	constructor(options: LRU.Options<string, unknown>, private redis: () => Redis.Redis) {
 		this.options = {
 			max: 500,
 			maxAge: 86400,
@@ -23,15 +23,15 @@ export class LRUWithRedisStorage implements IAsynchronousCacheType {
 
 	public async getItem<T>(key: string): Promise<T | undefined> {
 		// check local cache
-		let localCache = this.myCache.get(key);
+		let localCache: unknown = this.myCache.get(key);
 
 		if (localCache === undefined) {
 			// check central cache
-			localCache = await this.redis().get(key);
+			const redisValue = await this.redis().get(key);
 
-			if (localCache !== undefined) {
+			if (redisValue !== null) {
 				try {
-					localCache = JSON.parse(localCache);
+					localCache = JSON.parse(redisValue);
 				} catch (err) {
 					console.error('lru redis cache failed parsing data', err);
 					localCache = undefined;
@@ -41,11 +41,15 @@ export class LRUWithRedisStorage implements IAsynchronousCacheType {
 			}
 		}
 
-		return localCache ?? undefined;
+		return localCache as T | undefined;
 	}
 
 	/** ttl in seconds! */
-	public async setItem(key: string, content: any, options?: { ttl?: number }): Promise<void> {
+	public async setItem<T = unknown>(
+		key: string,
+		content: T | undefined,
+		options?: { ttl?: number }
+	): Promise<void> {
 		this.myCache.set(key, content);
 		if (this.options?.maxAge) {
 			await this.redis().setex(key, options?.ttl || this.options.maxAge, JSON.stringify(content));

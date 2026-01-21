@@ -1,19 +1,23 @@
 import { JSONStringifyKeyStrategy } from '../strategy/key/json.stringify.strategy.js';
 import { IAsyncKeyStrategy } from '../types/key.strategy.types.js';
-import { IAsynchronousCacheType, ISynchronousCacheType } from '../types/cache.types.js';
+import {
+	IAsynchronousCacheType,
+	ISynchronousCacheType,
+	ICacheOptions
+} from '../types/cache.types.js';
 
 const defaultKeyStrategy = new JSONStringifyKeyStrategy();
 
 export function Cache(
 	cachingStrategy: IAsynchronousCacheType | ISynchronousCacheType,
-	options?: any,
+	options?: ICacheOptions,
 	keyStrategy: IAsyncKeyStrategy = defaultKeyStrategy
 ) {
 	return function (
 		// eslint-disable-next-line @typescript-eslint/ban-types
 		target: Object & {
 			__cache_decarator_pending_results?: {
-				[key: string]: Promise<any> | undefined;
+				[key: string]: Promise<unknown> | undefined;
 			};
 		},
 		methodName: string,
@@ -22,7 +26,7 @@ export function Cache(
 		const originalMethod = descriptor.value;
 		const className = target.constructor.name;
 
-		descriptor.value = async function (...args: any[]) {
+		descriptor.value = async function (...args: unknown[]) {
 			const cacheKey = await keyStrategy.getKey(className, methodName, args);
 
 			const runMethod = async () => {
@@ -54,7 +58,7 @@ export function Cache(
 				target.__cache_decarator_pending_results[cacheKey] = (async () => {
 					try {
 						try {
-							const entry = await (cachingStrategy.getItem as any)(cacheKey);
+							const entry = await cachingStrategy.getItem<unknown>(cacheKey);
 							if (entry !== undefined) {
 								return entry;
 							}
