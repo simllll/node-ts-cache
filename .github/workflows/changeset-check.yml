@@ -1,0 +1,52 @@
+name: Changeset Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check:
+    name: Check for changeset
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for changeset
+        run: |
+          # Skip check for release PRs and bot PRs
+          if [[ "${{ github.head_ref }}" == "changeset-release/"* ]]; then
+            echo "Skipping changeset check for release PR"
+            exit 0
+          fi
+
+          # Check if any changeset files exist (excluding config.json)
+          CHANGESETS=$(find .changeset -name "*.md" -type f 2>/dev/null | wc -l)
+
+          if [ "$CHANGESETS" -eq 0 ]; then
+            echo "::error::No changeset found! Please run 'pnpm changeset' to create one."
+            echo ""
+            echo "A changeset describes what changes you made and how they affect the packages."
+            echo ""
+            echo "Run: pnpm changeset"
+            echo "Then select the packages you changed and the type of change (patch/minor/major)."
+            exit 1
+          fi
+
+          echo "Found $CHANGESETS changeset(s)"
