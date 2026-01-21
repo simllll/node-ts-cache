@@ -44,7 +44,7 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 						if (stringValue) {
 							parsedItem = JSON.parse(stringValue) as T;
 						}
-					} catch (error) {
+					} catch {
 						/** Not JSON, keep as string */
 					}
 
@@ -118,7 +118,7 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 		let parsedItem: T | string = stringValue;
 		try {
 			parsedItem = JSON.parse(stringValue) as T;
-		} catch (error) {
+		} catch {
 			/** Not JSON, keep as string */
 		}
 		return parsedItem as T;

@@ -14,8 +14,7 @@ export function Cache(
 	keyStrategy: IAsyncKeyStrategy = defaultKeyStrategy
 ) {
 	return function (
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		target: Object & {
+		target: object & {
 			__cache_decarator_pending_results?: {
 				[key: string]: Promise<unknown> | undefined;
 			};

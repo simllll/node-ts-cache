@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MultiCache, IMultiCacheKeyStrategy } from '../src/decorator/multicache.decorator.js';
 import { LRUStorage } from '../../storages/lru/src/LRUStorage.js';
 
@@ -64,8 +64,8 @@ describe('MultiCacheDecorator', () => {
 			'at'
 		);
 
-		Assert.deepStrictEqual(call1, ['elem1RETURNat', 'elem2RETURNat']);
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(call1).toEqual(['elem1RETURNat', 'elem2RETURNat']);
+		expect(myClass.callCount).toBe(1);
 
 		// Second call should use cache
 		const call2 = await myClass.getUrls(
@@ -76,8 +76,8 @@ describe('MultiCacheDecorator', () => {
 			'at'
 		);
 
-		Assert.deepStrictEqual(call2, ['elem1RETURNat', 'elem2RETURNat']);
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(call2).toEqual(['elem1RETURNat', 'elem2RETURNat']);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should handle partial cache hits', async () => {
@@ -104,7 +104,7 @@ describe('MultiCacheDecorator', () => {
 			'at'
 		);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		// Second call with elem1, elem2, elem3 - elem1 and elem2 should be cached
 		const call2 = await myClass.getUrls(
@@ -116,10 +116,10 @@ describe('MultiCacheDecorator', () => {
 			'at'
 		);
 
-		Assert.strictEqual(myClass.callCount, 2);
+		expect(myClass.callCount).toBe(2);
 		// Should only have been called with elem3
-		Assert.deepStrictEqual(myClass.calledWith[1], [{ path: 'elem3', pageType: 'x' }]);
-		Assert.strictEqual(call2.length, 3);
+		expect(myClass.calledWith[1]).toEqual([{ path: 'elem3', pageType: 'x' }]);
+		expect(call2.length).toBe(3);
 	});
 
 	it('Should handle different geo regions separately', async () => {
@@ -136,15 +136,15 @@ describe('MultiCacheDecorator', () => {
 		const myClass = new TestClass();
 
 		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		// Different region should trigger new call
 		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'de');
-		Assert.strictEqual(myClass.callCount, 2);
+		expect(myClass.callCount).toBe(2);
 
 		// Same region should use cache
 		await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
-		Assert.strictEqual(myClass.callCount, 2);
+		expect(myClass.callCount).toBe(2);
 	});
 
 	it('Should throw error when input and output sizes mismatch', async () => {
@@ -158,21 +158,16 @@ describe('MultiCacheDecorator', () => {
 
 		const myClass = new TestClass();
 
-		await Assert.rejects(
-			async () => {
-				await myClass.getUrls(
-					[
-						{ path: 'elem1', pageType: 'x' },
-						{ path: 'elem2', pageType: 'x' },
-						{ path: 'elem3', pageType: 'x' }
-					],
-					'at'
-				);
-			},
-			{
-				message: /input and output has different size/
-			}
-		);
+		await expect(async () => {
+			await myClass.getUrls(
+				[
+					{ path: 'elem1', pageType: 'x' },
+					{ path: 'elem2', pageType: 'x' },
+					{ path: 'elem3', pageType: 'x' }
+				],
+				'at'
+			);
+		}).rejects.toThrow(/input and output has different size/);
 	});
 
 	it('Should use default key strategy when none provided', async () => {
@@ -189,12 +184,12 @@ describe('MultiCacheDecorator', () => {
 		const myClass = new TestClassDefault();
 
 		const result1 = await myClass.getItems([1, 2, 3]);
-		Assert.deepStrictEqual(result1, ['item_1', 'item_2', 'item_3']);
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(result1).toEqual(['item_1', 'item_2', 'item_3']);
+		expect(myClass.callCount).toBe(1);
 
 		const result2 = await myClass.getItems([1, 2, 3]);
-		Assert.deepStrictEqual(result2, ['item_1', 'item_2', 'item_3']);
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(result2).toEqual(['item_1', 'item_2', 'item_3']);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should handle empty input array', async () => {
@@ -211,8 +206,8 @@ describe('MultiCacheDecorator', () => {
 		const myClass = new TestClass();
 
 		const result = await myClass.getUrls([], 'at');
-		Assert.deepStrictEqual(result, []);
-		Assert.strictEqual(myClass.callCount, 0);
+		expect(result).toEqual([]);
+		expect(myClass.callCount).toBe(0);
 	});
 
 	describe('DISABLE_CACHE_DECORATOR environment variable', () => {
@@ -242,7 +237,7 @@ describe('MultiCacheDecorator', () => {
 			await myClass.getUrls([{ path: 'elem1', pageType: 'x' }], 'at');
 
 			// Should call method every time when cache is disabled
-			Assert.strictEqual(myClass.callCount, 3);
+			expect(myClass.callCount).toBe(3);
 		});
 	});
 
@@ -269,8 +264,8 @@ describe('MultiCacheDecorator', () => {
 			// When all keys return undefined, the method is not called
 			// because there are no "missing" cacheable items to fetch
 			const result = await myClass.getItems([1, 2]);
-			Assert.deepStrictEqual(result, []);
-			Assert.strictEqual(myClass.callCount, 0);
+			expect(result).toEqual([]);
+			expect(myClass.callCount).toBe(0);
 		});
 
 		it('Should handle mixed undefined and valid keys', async () => {
@@ -311,9 +306,9 @@ describe('MultiCacheDecorator', () => {
 			const result = await myClass.getItems([1, 2, 3, 4]);
 
 			// Method should be called with only the cacheable items [2, 4]
-			Assert.strictEqual(myClass.callCount, 1);
-			Assert.deepStrictEqual(myClass.calledWith[0], [2, 4]);
-			Assert.deepStrictEqual(result, ['item_2', 'item_4']);
+			expect(myClass.callCount).toBe(1);
+			expect(myClass.calledWith[0]).toEqual([2, 4]);
+			expect(result).toEqual(['item_2', 'item_4']);
 		});
 	});
 
@@ -344,12 +339,12 @@ describe('MultiCacheDecorator', () => {
 			const myClass = new TestClass();
 
 			const result1 = await myClass.processData('test', [1, 2, 3]);
-			Assert.deepStrictEqual(result1, ['test_1', 'test_2', 'test_3']);
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(result1).toEqual(['test_1', 'test_2', 'test_3']);
+			expect(myClass.callCount).toBe(1);
 
 			const result2 = await myClass.processData('test', [1, 2, 3]);
-			Assert.deepStrictEqual(result2, ['test_1', 'test_2', 'test_3']);
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(result2).toEqual(['test_1', 'test_2', 'test_3']);
+			expect(myClass.callCount).toBe(1);
 		});
 	});
 });

@@ -38,9 +38,7 @@
 		"clean": "git clean -fdx src",
 		"dev": "tsc -p . -w",
 		"prepublishOnly": "tsc -p .",
-		"tdd": "mocha --loader=ts-node/esm -w",
-		"tdd-debug-brk": "mocha --loader=ts-node/esm --inspect-brk",
-		"test": "mocha --loader=ts-node/esm test/**/*.test.ts"
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"@node-ts-cache/core": "workspace:*",

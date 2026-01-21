@@ -12,13 +12,16 @@ export interface LRUWithRedisStorageOptions {
 
 export class LRUWithRedisStorage implements IAsynchronousCacheType {
 	// Using 'any' for cache value type as it needs to store arbitrary data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	private myCache: LRUCache<string, any>;
 
 	/** ttl in seconds! */
 	private options: Required<LRUWithRedisStorageOptions>;
 
-	constructor(options: LRUWithRedisStorageOptions, private redis: () => Redis.Redis) {
+	constructor(
+		options: LRUWithRedisStorageOptions,
+		private redis: () => Redis.Redis
+	) {
 		this.options = {
 			max: 500,
 			ttl: 86400,

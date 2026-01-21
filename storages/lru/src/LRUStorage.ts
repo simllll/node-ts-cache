@@ -13,7 +13,7 @@ export interface LRUStorageOptions {
 
 export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCacheType {
 	// Using 'any' for cache value type as it needs to store arbitrary data
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 	myCache: LRUCache<string, any>;
 
 	constructor(/** ttl in seconds! */ options: LRUStorageOptions) {

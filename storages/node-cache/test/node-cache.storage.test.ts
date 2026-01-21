@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect } from 'vitest';
 import NodeCacheStorage from '../src/index.js';
 
 const storage = new NodeCacheStorage({});
@@ -9,7 +9,7 @@ describe('NodeCacheStorage', () => {
 		const key = 'test';
 
 		await storage.setItem(key, content);
-		Assert.deepStrictEqual(await storage.getItem(key), content);
+		expect(await storage.getItem(key)).toEqual(content);
 	});
 
 	it('Should clear without errors', async () => {
@@ -19,13 +19,13 @@ describe('NodeCacheStorage', () => {
 	it('Should delete cache item if set to undefined', async () => {
 		await storage.setItem('test', undefined);
 
-		Assert.strictEqual(await storage.getItem('test'), undefined);
+		expect(await storage.getItem('test')).toBe(undefined);
 	});
 
 	it('Should return undefined if cache not hit', async () => {
 		await storage.clear();
 		const item = await storage.getItem('item123');
 
-		Assert.strictEqual(item, undefined);
+		expect(item).toBe(undefined);
 	});
 });

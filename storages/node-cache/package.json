@@ -38,7 +38,7 @@
 		"clean": "git clean -fdx src",
 		"dev": "tsc -p . -w",
 		"prepublishOnly": "tsc -p .",
-		"test": "mocha --loader=ts-node/esm test/**/*.test.ts"
+		"test": "vitest run"
 	},
 	"dependencies": {
 		"node-cache": "^5.1.2"

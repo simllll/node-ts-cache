@@ -1,63 +1,71 @@
-import * as Assert from 'assert';
-import RedisStorage from '../src/index.js';
-import Bluebird from 'bluebird';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { RedisMemoryServer } from 'redis-memory-server';
+import { RedisStorage } from '../src/redis.storage.js';
 
-// @ts-ignore
-import RedisMock from 'redis-mock';
-Bluebird.promisifyAll(RedisMock.RedisClient.prototype);
-Bluebird.promisifyAll(RedisMock.Multi.prototype);
-
-const storage = new RedisStorage(
-	{
-		host: 'host',
-		port: 123,
-		password: 'pass'
-	},
-	RedisMock
-);
+let redisServer: RedisMemoryServer;
+let storage: RedisStorage;
 
 describe('RedisStorage', () => {
+	beforeAll(async () => {
+		redisServer = new RedisMemoryServer();
+		const host = await redisServer.getHost();
+		const port = await redisServer.getPort();
+		storage = new RedisStorage({
+			socket: {
+				host,
+				port
+			}
+		});
+	});
+
+	afterAll(async () => {
+		await storage.disconnect();
+		await redisServer.stop();
+	});
+
 	it('Should clear Redis without errors', async () => {
 		await storage.clear();
 	});
 
-	/*
-	it('Should delete cache item if set to undefined', async () => {
-		await storage.setItem('test', undefined);
-
-		Assert.strictEqual(clientMock.delAsync.called, true);
-		Assert.strictEqual(clientMock.delAsync.calledWith('test'), true);
-		Assert.strictEqual(clientMock.setItem.called, false);
-	});*/
-
 	it('Should return undefined if cache not hit', async () => {
-		// await storage.clear();
 		const item = await storage.getItem('item123');
-
-		Assert.strictEqual(item, undefined);
+		expect(item).toBe(undefined);
 	});
 
-	it.skip('Should throw an Error if connection to redis fails', async () => {
-		const testStorage = new RedisStorage(
-			{
-				host: 'unknown-host',
-				port: 123,
-				password: 'pass',
-				connect_timeout: 1000
-			},
-			RedisMock
-		);
+	it('Should set and get a string value', async () => {
+		await storage.setItem('testKey', 'testValue');
+		const result = await storage.getItem<string>('testKey');
+		expect(result).toBe('testValue');
+	});
 
-		const errorMsg = 'Should have thrown an error, but did not';
-		try {
-			await testStorage.clear();
-			await Promise.reject(errorMsg);
-		} catch (error) {
-			if (error === errorMsg) {
-				Assert.fail('It id not throw an error');
-			} else {
-				Assert.ok(true);
-			}
-		}
+	it('Should set and get an object value', async () => {
+		const testObj = { name: 'test', value: 123 };
+		await storage.setItem('objectKey', testObj);
+		const result = await storage.getItem<typeof testObj>('objectKey');
+		expect(result).toEqual(testObj);
+	});
+
+	it('Should delete cache item when set to undefined', async () => {
+		await storage.setItem('deleteKey', 'value');
+		expect(await storage.getItem('deleteKey')).toBe('value');
+
+		await storage.setItem('deleteKey', undefined);
+		expect(await storage.getItem('deleteKey')).toBe(undefined);
+	});
+
+	it('Should handle numeric values', async () => {
+		await storage.setItem('numKey', 42);
+		const result = await storage.getItem<number>('numKey');
+		expect(result).toBe(42); // Numbers are parsed back from string
+	});
+
+	it('Should clear all items', async () => {
+		await storage.setItem('key1', 'value1');
+		await storage.setItem('key2', 'value2');
+
+		await storage.clear();
+
+		expect(await storage.getItem('key1')).toBe(undefined);
+		expect(await storage.getItem('key2')).toBe(undefined);
 	});
 });

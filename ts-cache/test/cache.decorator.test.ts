@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Cache, ExpirationStrategy, ISyncKeyStrategy } from '../src/index.js';
 import { MemoryStorage } from '../src/storage/memory/index.js';
 import { IAsyncKeyStrategy } from '../src/types/key.strategy.types.js';
@@ -131,8 +131,8 @@ describe('CacheDecorator', () => {
 
 		const users = await myClass.getUsers();
 
-		Assert.strictEqual(data, users);
-		Assert.strictEqual(await strategy.getItem<string[]>('TestClassOne:getUsers:[]'), data);
+		expect(users).toBe(data);
+		expect(await strategy.getItem<string[]>('TestClassOne:getUsers:[]')).toBe(data);
 	});
 
 	it('Should cache function call correctly via storage', async () => {
@@ -140,8 +140,8 @@ describe('CacheDecorator', () => {
 
 		const users = await myClass.storageUser();
 
-		Assert.strictEqual(data, users);
-		Assert.strictEqual(await storage.getItem<string[]>('TestClassOne:storageUser:[]'), data);
+		expect(users).toBe(data);
+		expect(await storage.getItem<string[]>('TestClassOne:storageUser:[]')).toBe(data);
 	});
 
 	it('Should prevent calling same method several times', async () => {
@@ -149,11 +149,11 @@ describe('CacheDecorator', () => {
 
 		await Promise.all([myClass.getUsers(), myClass.getUsers(), myClass.getUsers()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		await Promise.all([myClass.getUsers(), myClass.getUsers(), myClass.getUsers()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Check if undefined return values is NOT cached', async () => {
@@ -161,11 +161,11 @@ describe('CacheDecorator', () => {
 
 		await myClass.getUndefinedValue();
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		await myClass.getUndefinedValue();
 
-		Assert.strictEqual(myClass.callCount, 2);
+		expect(myClass.callCount).toBe(2);
 	});
 
 	it('Check if false return values is cached', async () => {
@@ -173,11 +173,11 @@ describe('CacheDecorator', () => {
 
 		await Promise.all([myClass.getFalseValue(), myClass.getFalseValue(), myClass.getFalseValue()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		await Promise.all([myClass.getFalseValue(), myClass.getFalseValue(), myClass.getFalseValue()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Check if null return values is also cached', async () => {
@@ -185,19 +185,19 @@ describe('CacheDecorator', () => {
 
 		await Promise.all([myClass.getNullValue(), myClass.getNullValue(), myClass.getNullValue()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 
 		await Promise.all([myClass.getNullValue(), myClass.getNullValue(), myClass.getNullValue()]);
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should cache Promise response correctly', async () => {
 		const myClass = new TestClassOne();
 
 		await myClass.getUsersPromise().then(async response => {
-			Assert.strictEqual(data, response);
-			Assert.strictEqual(await strategy.getItem<string[]>('TestClassOne:getUsersPromise:[]'), data);
+			expect(response).toBe(data);
+			expect(await strategy.getItem<string[]>('TestClassOne:getUsersPromise:[]')).toBe(data);
 		});
 	});
 
@@ -205,8 +205,8 @@ describe('CacheDecorator', () => {
 		const myClass = new TestClassTwo();
 
 		const users = await myClass.getUsers();
-		Assert.strictEqual(data, users);
-		Assert.strictEqual(await strategy.getItem<string[]>('TestClassTwo:getUsers:[]'), data);
+		expect(users).toBe(data);
+		expect(await strategy.getItem<string[]>('TestClassTwo:getUsers:[]')).toBe(data);
 	});
 
 	it('Should have valid stacktrace', async () => {
@@ -244,19 +244,16 @@ describe('CacheDecorator', () => {
 
 		const users = await myClass.getUsers();
 
-		Assert.strictEqual(data, users);
-		Assert.strictEqual(await strategy.getItem<string[]>('TestClassThree:getUsers:[]:foo'), data);
+		expect(users).toBe(data);
+		expect(await strategy.getItem<string[]>('TestClassThree:getUsers:[]:foo')).toBe(data);
 	});
 
 	it('Should cache Promise response correctly (custom key strategy)', async () => {
 		const myClass = new TestClassThree();
 
 		await myClass.getUsersPromise().then(async response => {
-			Assert.strictEqual(data, response);
-			Assert.strictEqual(
-				await strategy.getItem<string[]>('TestClassThree:getUsersPromise:[]:foo'),
-				data
-			);
+			expect(response).toBe(data);
+			expect(await strategy.getItem<string[]>('TestClassThree:getUsersPromise:[]:foo')).toBe(data);
 		});
 	});
 
@@ -264,8 +261,8 @@ describe('CacheDecorator', () => {
 		const myClass = new TestClassFour();
 
 		await myClass.getUsersPromise().then(async response => {
-			Assert.strictEqual(data, response);
-			Assert.strictEqual(await strategy.getItem<string[]>('getUsersPromise'), data);
+			expect(response).toBe(data);
+			expect(await strategy.getItem<string[]>('getUsersPromise')).toBe(data);
 		});
 	});
 
@@ -297,7 +294,7 @@ describe('CacheDecorator', () => {
 			await myClass.getUsers();
 
 			// Method should be called every time when cache is disabled
-			Assert.strictEqual(myClass.callCount, 3);
+			expect(myClass.callCount).toBe(3);
 		});
 
 		it('Should work normally when DISABLE_CACHE_DECORATOR is not set', async () => {
@@ -323,7 +320,7 @@ describe('CacheDecorator', () => {
 			await myClass.getUsers();
 
 			// Method should be called only once when caching is enabled
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(myClass.callCount).toBe(1);
 		});
 	});
 
@@ -352,7 +349,7 @@ describe('CacheDecorator', () => {
 
 			// Should not throw, just log warning and continue
 			const result = await myClass.getUsers();
-			Assert.deepStrictEqual(result, data);
+			expect(result).toEqual(data);
 		});
 
 		it('Should handle cache write errors gracefully', async () => {
@@ -379,7 +376,7 @@ describe('CacheDecorator', () => {
 
 			// Should not throw, just log warning and continue
 			const result = await myClass.getUsers();
-			Assert.deepStrictEqual(result, data);
+			expect(result).toEqual(data);
 		});
 	});
 
@@ -408,7 +405,7 @@ describe('CacheDecorator', () => {
 			await myClass.getWithArgs(arg);
 			await myClass.getWithArgs(arg);
 
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(myClass.callCount).toBe(1);
 		});
 
 		it('Should cache with array arguments', async () => {
@@ -418,7 +415,7 @@ describe('CacheDecorator', () => {
 			await myClass.getWithArgs(arg);
 			await myClass.getWithArgs(arg);
 
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(myClass.callCount).toBe(1);
 		});
 
 		it('Should differentiate between different arguments', async () => {
@@ -428,7 +425,7 @@ describe('CacheDecorator', () => {
 			await myClass.getWithArgs(2);
 			await myClass.getWithArgs(3);
 
-			Assert.strictEqual(myClass.callCount, 3);
+			expect(myClass.callCount).toBe(3);
 		});
 
 		it('Should cache with multiple arguments', async () => {
@@ -437,7 +434,7 @@ describe('CacheDecorator', () => {
 			await myClass.getWithArgs('a', 1, true);
 			await myClass.getWithArgs('a', 1, true);
 
-			Assert.strictEqual(myClass.callCount, 1);
+			expect(myClass.callCount).toBe(1);
 		});
 	});
 
@@ -455,12 +452,7 @@ describe('CacheDecorator', () => {
 
 			const myClass = new TestClassError();
 
-			await Assert.rejects(
-				async () => {
-					await myClass.throwingMethod();
-				},
-				{ message: 'Test error' }
-			);
+			await expect(myClass.throwingMethod()).rejects.toThrow('Test error');
 		});
 
 		it('Should not cache failed method calls', async () => {
@@ -492,7 +484,7 @@ describe('CacheDecorator', () => {
 			}
 
 			// Each call should execute since errors are not cached
-			Assert.strictEqual(myClass.callCount, 2);
+			expect(myClass.callCount).toBe(2);
 		});
 	});
 });

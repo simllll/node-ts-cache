@@ -9,8 +9,7 @@ export function SyncCache(
 	options?: ICacheOptions,
 	keyStrategy: ISyncKeyStrategy = defaultKeyStrategy
 ) {
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	return function (target: Object, methodName: string, descriptor: PropertyDescriptor) {
+	return function (target: object, methodName: string, descriptor: PropertyDescriptor) {
 		const originalMethod = descriptor.value;
 		const className = target.constructor.name;
 

@@ -30,12 +30,7 @@ export function MultiCache(
 	parameterIndex = 0,
 	keyStrategy: IMultiCacheKeyStrategy = defaultKeyStrategy
 ) {
-	return function (
-		// eslint-disable-next-line @typescript-eslint/ban-types
-		target: Object,
-		methodName: string,
-		descriptor: PropertyDescriptor
-	) {
+	return function (target: object, methodName: string, descriptor: PropertyDescriptor) {
 		const originalMethod = descriptor.value;
 		const className = target.constructor.name;
 
