@@ -1,6 +1,6 @@
 {
 	"name": "@node-ts-cache/lru-storage",
-	"version": "2.0.1",
+	"version": "1.0.0",
 	"description": "Simple and extensible caching module supporting decorators",
 	"keywords": [
 		"node",
@@ -41,7 +41,7 @@
 		"test": "mocha --loader=ts-node/esm test/**/*.test.ts"
 	},
 	"dependencies": {
-		"@node-ts-cache/core": "^6.0.1",
+		"@node-ts-cache/core": "workspace:*",
 		"lru-cache": "^10.0.0"
 	},
 	"devDependencies": {},
@@ -50,6 +50,5 @@
 	},
 	"publishConfig": {
 		"access": "public"
-	},
-	"gitHead": "c938eba762060f940a34bc192bec03bc76ea4017"
+	}
 }
