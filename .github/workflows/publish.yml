@@ -1,0 +1,167 @@
+name: Publish to npm
+
+on:
+  # Trigger on release creation
+  release:
+    types: [published]
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+      prerelease_id:
+        description: 'Prerelease identifier (e.g., alpha, beta, rc)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run (no actual publish)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    name: Publish packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+        env:
+          CI: true
+
+      # Version and publish for manual workflow dispatch
+      - name: Version and Publish (Manual)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "Dry run mode - showing what would be published"
+            npx lerna changed || echo "No packages changed"
+          else
+            PREID_ARG=""
+            if [ -n "${{ inputs.prerelease_id }}" ]; then
+              PREID_ARG="--preid ${{ inputs.prerelease_id }}"
+            fi
+
+            # Version packages
+            npx lerna version ${{ inputs.version_type }} \
+              --yes \
+              --conventional-commits \
+              --create-release github \
+              $PREID_ARG
+
+            # Publish to npm
+            npx lerna publish from-git --yes
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Publish for release events (already versioned via release)
+      - name: Publish (Release)
+        if: github.event_name == 'release'
+        run: |
+          npx lerna publish from-git --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # Separate job for conventional commits based auto-versioning
+  auto-version:
+    name: Auto-version (Conventional Commits)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+        env:
+          CI: true
+
+      - name: Check for changed packages
+        id: changed
+        run: |
+          CHANGED=$(npx lerna changed --json 2>/dev/null || echo "[]")
+          if [ "$CHANGED" == "[]" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Version and Publish
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          # Version using conventional commits
+          npx lerna version \
+            --yes \
+            --conventional-commits \
+            --create-release github \
+            --message "chore(release): publish"
+
+          # Publish to npm
+          npx lerna publish from-git --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,274 +1,745 @@
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache)
-[![The MIT License](https://img.shields.io/npm/l/@hokify/node-ts-cache.svg)](http://opensource.org/licenses/MIT)
-
-[![NPM](https://nodei.co/npm/@hokify/node-ts-cache.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/@hokify/node-ts-cache/)
-
 # @hokify/node-ts-cache
 
-Simple and extensible caching module supporting decorators
+[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js CI](https://github.com/simllll/node-ts-cache/actions/workflows/test.yml/badge.svg)](https://github.com/simllll/node-ts-cache/actions/workflows/test.yml)
 
-<!-- TOC depthTo:2 -->
+Simple and extensible caching module for TypeScript/Node.js with decorator support.
 
-- [Install](#install)
-- [Usage](#usage)
-  - [With decorator](#with-decorator)
-  - [Directly](#directly)
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Decorators](#decorators)
+  - [@Cache](#cache)
+  - [@SyncCache](#synccache)
+  - [@MultiCache](#multicache)
+- [Direct API Usage](#direct-api-usage)
 - [Strategies](#strategies)
   - [ExpirationStrategy](#expirationstrategy)
 - [Storages](#storages)
-- [Test](#test)
+  - [Built-in Storages](#built-in-storages)
+  - [Additional Storages](#additional-storages)
+- [Custom Key Strategies](#custom-key-strategies)
+- [Interface Definitions](#interface-definitions)
+- [Advanced Usage](#advanced-usage)
+- [Environment Variables](#environment-variables)
+- [Testing](#testing)
 
-<!-- /TOC -->
-
-# Install
+## Installation
 
 ```bash
-npm install --save @ħokify/node-ts-cache
+npm install @hokify/node-ts-cache
 ```
 
-# Usage
+## Quick Start
 
-## With decorator
-
-Caches function response using the given options. Works with different strategies and storages. Uses all arguments to build an unique key.
-
-`@Cache(strategy, options)`
-
-Standard method to cache an async method.
-
-- `strategy`: A supported caching [Strategy](#strategies) (Async)
-- `options`: Options passed to the strategy for this particular method
-
-_Note: @Cache always converts the method response to a promise because caching might be async._
-
-E.g.
-
-```ts
+```typescript
 import { Cache, ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
 
-const myStrategy = new ExpirationStrategy(new MemoryStorage());
+// Create a caching strategy with in-memory storage
+const cacheStrategy = new ExpirationStrategy(new MemoryStorage());
 
-class MyService {
-  @Cache(myStrategy, { ttl: 60 })
-  public async getUsers(): Promise<string[]> {
-    return ["Max", "User"];
+class UserService {
+  @Cache(cacheStrategy, { ttl: 60 })
+  async getUser(id: string): Promise<User> {
+    // Expensive operation - result will be cached for 60 seconds
+    return await database.findUser(id);
   }
 }
 ```
 
-`@SyncCache(strategy, options)`
-Method to use only sync caches. This allows you to use caching without a promise function.
- 
-- `strategy`: A supported caching [Strategy](#strategies) (Sync)
-- `options`: Options passed to the strategy for this particular method
+## Decorators
 
-E.g.
+### @Cache
 
-```ts
+Caches async method responses. The cache key is generated from the class name, method name, and stringified arguments.
+
+**Signature:**
+```typescript
+@Cache(strategy: IAsynchronousCacheType | ISynchronousCacheType, options?: ExpirationOptions, keyStrategy?: IAsyncKeyStrategy)
+```
+
+**Parameters:**
+- `strategy` - A caching strategy instance (e.g., `ExpirationStrategy`)
+- `options` - Options passed to the strategy (see [ExpirationStrategy](#expirationstrategy))
+- `keyStrategy` - Optional custom key generation strategy
+
+**Important:** `@Cache` always returns a Promise, even for synchronous methods, because cache operations may be asynchronous.
+
+**Example:**
+```typescript
+import { Cache, ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
+
+const strategy = new ExpirationStrategy(new MemoryStorage());
+
+class ProductService {
+  @Cache(strategy, { ttl: 300 })
+  async getProduct(id: string): Promise<Product> {
+    console.log("Fetching product from database...");
+    return await db.products.findById(id);
+  }
+
+  @Cache(strategy, { ttl: 3600, isCachedForever: false })
+  async getCategories(): Promise<Category[]> {
+    return await db.categories.findAll();
+  }
+}
+
+// Usage
+const service = new ProductService();
+
+// First call - hits database
+const product1 = await service.getProduct("123");
+
+// Second call with same args - returns cached result
+const product2 = await service.getProduct("123");
+
+// Different args - hits database again
+const product3 = await service.getProduct("456");
+```
+
+### @SyncCache
+
+Caches synchronous method responses without converting to Promises. Use this when your storage is synchronous (like `MemoryStorage` or `LRUStorage`).
+
+**Signature:**
+```typescript
+@SyncCache(strategy: ISynchronousCacheType, options?: ExpirationOptions, keyStrategy?: ISyncKeyStrategy)
+```
+
+**Example:**
+```typescript
 import { SyncCache, ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
 
-const myStrategy = new ExpirationStrategy(new MemoryStorage());
+const strategy = new ExpirationStrategy(new MemoryStorage());
 
-class MyService {
-  @SyncCache(myStrategy, { ttl: 60 })
-  public getUsers(): string[] {
-    return ["Max", "User"];
+class ConfigService {
+  @SyncCache(strategy, { ttl: 60 })
+  getConfig(key: string): ConfigValue {
+    // Expensive computation
+    return computeConfig(key);
+  }
+}
+
+// Usage - returns value directly, not a Promise
+const config = new ConfigService().getConfig("theme");
+```
+
+### @MultiCache
+
+Enables multi-tier caching with batch operations. Useful for:
+- Caching array-based lookups efficiently
+- Implementing local + remote cache tiers
+- Reducing database queries for batch operations
+
+**Signature:**
+```typescript
+@MultiCache(
+  strategies: Array<IMultiSynchronousCacheType | IMultiIAsynchronousCacheType>,
+  parameterIndex: number,
+  cacheKeyFn?: (element: any) => string,
+  options?: ExpirationOptions
+)
+```
+
+**Parameters:**
+- `strategies` - Array of cache strategies, checked in order (first = fastest, last = slowest)
+- `parameterIndex` - Index of the array parameter in the method signature
+- `cacheKeyFn` - Optional function to generate cache keys for each element
+- `options` - Options passed to strategies
+
+**Example:**
+```typescript
+import { MultiCache, ExpirationStrategy } from "@hokify/node-ts-cache";
+import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+import RedisIOStorage from "@hokify/node-ts-cache-redisio-storage";
+
+// Local cache (fastest) -> Redis (shared) -> Database (slowest)
+const localCache = new ExpirationStrategy(new NodeCacheStorage());
+const redisCache = new RedisIOStorage(() => redisClient, { maxAge: 3600 });
+
+class UserService {
+  @MultiCache([localCache, redisCache], 0, (userId) => `user:${userId}`, { ttl: 300 })
+  async getUsersByIds(userIds: string[]): Promise<User[]> {
+    // This only runs for IDs not found in any cache
+    // IMPORTANT: Return results in the same order as input IDs
+    return await db.users.findByIds(userIds);
+  }
+}
+
+// Usage
+const service = new UserService();
+
+// First call - checks local, then redis, then hits database
+const users = await service.getUsersByIds(["1", "2", "3"]);
+
+// Second call - user 1 & 2 from local cache, user 4 from database
+const moreUsers = await service.getUsersByIds(["1", "2", "4"]);
+```
+
+**Return Value Requirements:**
+- Return an array with the same length and order as the input array
+- Use `null` for entries that exist but are empty
+- Use `undefined` for entries that should be re-queried next time
+
+## Direct API Usage
+
+You can use the caching strategy directly without decorators:
+
+```typescript
+import { ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
+
+const cache = new ExpirationStrategy(new MemoryStorage());
+
+class DataService {
+  async getData(key: string): Promise<Data> {
+    // Check cache first
+    const cached = await cache.getItem<Data>(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    // Fetch fresh data
+    const data = await fetchData(key);
+
+    // Store in cache
+    await cache.setItem(key, data, { ttl: 300 });
+
+    return data;
+  }
+
+  async invalidate(key: string): Promise<void> {
+    await cache.setItem(key, undefined);
+  }
+
+  async clearAll(): Promise<void> {
+    await cache.clear();
   }
 }
 ```
 
-`@MultiCache(strategy, parameterIndex, cacheKey, options)`
-This method uses multi get and multi set of the cache providers if supported and therefore can use
-different input paramters and still cache each variation.
+## Strategies
 
-- `strategies`: A list of caching [Strategy](#strategies), which is handled by provided order
-- `parameterIndex`: The parameter index of the array
-- `cacheKey`: a custom cache key function for each element of the cache
-- `options`: Options passed to the strategy for this particular method
+### ExpirationStrategy
 
-E.g.
-```ts
-import { MultiCache } from "@hokify/node-ts-cache";
-import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage'; 
-import RedisIOStorage from '@hokify/node-ts-cache-redisio-storage';
+Time-based cache expiration strategy. Items are automatically invalidated after a specified TTL (Time To Live).
 
-const localStrategy = new NodeCacheStorage();
-const centralStrategy = new RedisIOStorage({/*..*/});
+**Constructor:**
+```typescript
+new ExpirationStrategy(storage: IAsynchronousCacheType | ISynchronousCacheType)
+```
 
-class MyService {
-  @MultiCache([localStrategy, centralStrategy], 0)
-  public getUserNames(userIds: string[]): Promise<string>[] {
-    return getUserNamesFromDatabase(userIds); // beware: return same order and number of userIds -> name
-        // e.g. 1,2,3 .. shoudl return [userName1, userName2, userName3] (or null for entries that do not exist)
-        // if you return undefined (instead of null) for one entry, it is queried the next time again. 
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `ttl` | `number` | `60` | Time to live in **seconds** |
+| `isLazy` | `boolean` | `true` | If `true`, items are deleted when accessed after expiration. If `false`, items are deleted automatically via `setTimeout` |
+| `isCachedForever` | `boolean` | `false` | If `true`, items never expire (ignores `ttl`) |
+
+**Example:**
+```typescript
+import { ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
+
+const storage = new MemoryStorage();
+const strategy = new ExpirationStrategy(storage);
+
+// Cache for 5 minutes with lazy expiration
+await strategy.setItem("key1", "value", { ttl: 300, isLazy: true });
+
+// Cache forever
+await strategy.setItem("key2", "value", { isCachedForever: true });
+
+// Cache for 10 seconds with eager expiration (auto-delete)
+await strategy.setItem("key3", "value", { ttl: 10, isLazy: false });
+```
+
+**Lazy vs Eager Expiration:**
+- **Lazy (`isLazy: true`)**: Expired items remain in storage until accessed. Memory is freed on read. Better for large caches.
+- **Eager (`isLazy: false`)**: Items are deleted via `setTimeout` after TTL. Frees memory automatically but uses timers.
+
+## Storages
+
+### Built-in Storages
+
+These storages are included in the core package:
+
+#### MemoryStorage
+
+Simple in-memory storage using a JavaScript object. Best for development and simple use cases.
+
+```typescript
+import { MemoryStorage, ExpirationStrategy } from "@hokify/node-ts-cache";
+
+const storage = new MemoryStorage();
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Synchronous operations
+- No external dependencies
+- Data lost on process restart
+- No size limits (can cause memory issues)
+
+#### FsJsonStorage
+
+File-based storage that persists cache to a JSON file. Useful for persistent local caching.
+
+```typescript
+import { FsJsonStorage, ExpirationStrategy } from "@hokify/node-ts-cache";
+
+const storage = new FsJsonStorage("/tmp/cache.json");
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Asynchronous operations
+- Survives process restarts
+- Slower than memory storage
+- Good for development/single-instance deployments
+
+### Additional Storages
+
+Install these separately based on your needs:
+
+#### NodeCacheStorage
+
+Wrapper for [node-cache](https://www.npmjs.com/package/node-cache) - a simple in-memory cache with TTL support.
+
+```bash
+npm install @hokify/node-ts-cache-node-cache-storage
+```
+
+```typescript
+import { ExpirationStrategy } from "@hokify/node-ts-cache";
+import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+
+const storage = new NodeCacheStorage({
+  stdTTL: 100,        // Default TTL in seconds
+  checkperiod: 120,   // Cleanup interval in seconds
+  maxKeys: 1000       // Maximum number of keys
+});
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Synchronous operations
+- Supports multi-get/set operations
+- Built-in TTL and cleanup
+- Good for production single-instance apps
+
+#### LRUStorage
+
+Wrapper for [lru-cache](https://www.npmjs.com/package/lru-cache) - Least Recently Used cache with automatic eviction.
+
+```bash
+npm install @hokify/node-ts-cache-lru-storage
+```
+
+```typescript
+import { ExpirationStrategy } from "@hokify/node-ts-cache";
+import LRUStorage from "@hokify/node-ts-cache-lru-storage";
+
+const storage = new LRUStorage({
+  max: 500,           // Maximum number of items
+  maxAge: 1000 * 60   // Max age in milliseconds (note: different from strategy TTL)
+});
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Synchronous operations
+- Automatic eviction when max size reached
+- Memory-safe with bounded size
+- Supports multi-get/set operations
+
+**Note:** LRU cache has its own TTL (`maxAge` in milliseconds). When using with `ExpirationStrategy`, both TTLs apply. Set `maxAge` higher than your strategy TTL or use `isCachedForever` in the strategy.
+
+#### RedisStorage
+
+Redis storage using the legacy `redis` package (v3.x). For new projects, consider using `RedisIOStorage` instead.
+
+```bash
+npm install @hokify/node-ts-cache-redis-storage
+```
+
+```typescript
+import { ExpirationStrategy } from "@hokify/node-ts-cache";
+import RedisStorage from "@hokify/node-ts-cache-redis-storage";
+
+const storage = new RedisStorage({
+  host: "localhost",
+  port: 6379,
+  password: "optional"
+});
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Asynchronous operations
+- Uses legacy `redis` package with Bluebird promises
+- Shared cache across multiple instances
+- No compression support
+
+#### RedisIOStorage
+
+Modern Redis storage using [ioredis](https://github.com/redis/ioredis) with optional Snappy compression.
+
+```bash
+npm install @hokify/node-ts-cache-redisio-storage
+```
+
+```typescript
+import { ExpirationStrategy } from "@hokify/node-ts-cache";
+import RedisIOStorage from "@hokify/node-ts-cache-redisio-storage";
+import Redis from "ioredis";
+
+const redisClient = new Redis({
+  host: "localhost",
+  port: 6379
+});
+
+// Basic usage
+const storage = new RedisIOStorage(
+  () => redisClient,
+  { maxAge: 3600 }  // TTL in seconds
+);
+
+// With compression (reduces bandwidth, increases CPU usage)
+const compressedStorage = new RedisIOStorage(
+  () => redisClient,
+  { maxAge: 3600, compress: true }
+);
+
+// With error handler (non-blocking writes)
+storage.onError((error) => {
+  console.error("Redis error:", error);
+});
+
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Asynchronous operations
+- Supports multi-get/set operations
+- Optional Snappy compression
+- Modern ioredis client
+- Custom error handler support
+- Can bypass ExpirationStrategy TTL (uses Redis native TTL)
+
+**Constructor Options:**
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxAge` | `number` | `86400` | TTL in seconds (used by Redis SETEX) |
+| `compress` | `boolean` | `false` | Enable Snappy compression |
+
+#### LRUWithRedisStorage
+
+Two-tier caching: fast local LRU cache with Redis fallback. Provides the best of both worlds.
+
+```bash
+npm install @hokify/node-ts-cache-lru-redis-storage
+```
+
+```typescript
+import { ExpirationStrategy } from "@hokify/node-ts-cache";
+import LRUWithRedisStorage from "@hokify/node-ts-cache-lru-redis-storage";
+import Redis from "ioredis";
+
+const redisClient = new Redis();
+
+const storage = new LRUWithRedisStorage(
+  { max: 1000 },        // LRU options
+  () => redisClient     // Redis client factory
+);
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+- Asynchronous operations
+- Local LRU for hot data
+- Redis fallback for cache misses
+- Reduces Redis round-trips
+- Good for high-traffic applications
+
+## Custom Key Strategies
+
+By default, cache keys are generated as: `ClassName:methodName:JSON.stringify(args)`
+
+You can implement custom key strategies for different needs:
+
+### Synchronous Key Strategy
+
+```typescript
+import { Cache, ExpirationStrategy, MemoryStorage, ISyncKeyStrategy } from "@hokify/node-ts-cache";
+
+class CustomKeyStrategy implements ISyncKeyStrategy {
+  getKey(className: string, methodName: string, args: any[]): string | undefined {
+    // Return undefined to skip caching for this call
+    if (args[0] === "skip") {
+      return undefined;
+    }
+
+    // Custom key format
+    return `${className}::${methodName}::${args.join("-")}`;
   }
 }
 
-const a = new MyService();
+const strategy = new ExpirationStrategy(new MemoryStorage());
+const keyStrategy = new CustomKeyStrategy();
+
+class MyService {
+  @Cache(strategy, { ttl: 60 }, keyStrategy)
+  async getData(id: string): Promise<Data> {
+    return fetchData(id);
+  }
+}
+```
+
+### Asynchronous Key Strategy
+
+For key generation that requires async operations (e.g., fetching user context):
+
+```typescript
+import { Cache, ExpirationStrategy, MemoryStorage, IAsyncKeyStrategy } from "@hokify/node-ts-cache";
+
+class AsyncKeyStrategy implements IAsyncKeyStrategy {
+  async getKey(className: string, methodName: string, args: any[]): Promise<string | undefined> {
+    // Async operation to build key
+    const userId = await getCurrentUserId();
+    return `${userId}:${className}:${methodName}:${JSON.stringify(args)}`;
+  }
+}
+```
+
+## Interface Definitions
+
+### Storage Interfaces
+
+```typescript
 /**
-* this call checks local cache if it has user id1, 2 or 3..
-* all cache misses are then checked by the central cache
-* if there are still some missing entries, they are retrieved with the original getUsers method.
-*/
-const result = await a.getUsers([1,2,3]);
+ * Cache entry structure stored in backends
+ */
+interface ICacheEntry {
+  content: any;   // The cached value
+  meta: any;      // Metadata (e.g., TTL, createdAt)
+}
 
+/**
+ * Asynchronous storage for single items
+ */
+interface IAsynchronousCacheType<C = ICacheEntry> {
+  /** Retrieve an item by key. Returns undefined if not found. */
+  getItem<T>(key: string): Promise<T | undefined>;
+
+  /** Store an item. Pass undefined as content to delete. */
+  setItem(key: string, content: C | undefined, options?: any): Promise<void>;
+
+  /** Clear all items from the cache. */
+  clear(): Promise<void>;
+}
+
+/**
+ * Synchronous storage for single items
+ */
+interface ISynchronousCacheType<C = ICacheEntry> {
+  /** Retrieve an item by key. Returns undefined if not found. */
+  getItem<T>(key: string): T | undefined;
+
+  /** Store an item. Pass undefined as content to delete. */
+  setItem(key: string, content: C | undefined, options?: any): void;
+
+  /** Clear all items from the cache. */
+  clear(): void;
+}
+
+/**
+ * Asynchronous storage with batch operations
+ */
+interface IMultiIAsynchronousCacheType<C = ICacheEntry> {
+  /** Retrieve multiple items by keys. */
+  getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
+
+  /** Store multiple items at once. */
+  setItems(values: { key: string; content: C | undefined }[], options?: any): Promise<void>;
+
+  /** Clear all items from the cache. */
+  clear(): Promise<void>;
+}
+
+/**
+ * Synchronous storage with batch operations
+ */
+interface IMultiSynchronousCacheType<C = ICacheEntry> {
+  /** Retrieve multiple items by keys. */
+  getItems<T>(keys: string[]): { [key: string]: T | undefined };
+
+  /** Store multiple items at once. */
+  setItems(values: { key: string; content: C | undefined }[], options?: any): void;
+
+  /** Clear all items from the cache. */
+  clear(): void;
+}
 ```
 
+### Key Strategy Interfaces
 
-Cache decorator generates cache key according to class name, class method and args (with JSON.stringify).
-If you want another key creation logic you can bypass key creation strategy to the Cache decorator.
+```typescript
+/**
+ * Synchronous key generation strategy
+ */
+interface ISyncKeyStrategy {
+  /**
+   * Generate a cache key from method context
+   * @param className - Name of the class containing the method
+   * @param methodName - Name of the cached method
+   * @param args - Arguments passed to the method
+   * @returns Cache key string, or undefined to skip caching
+   */
+  getKey(className: string, methodName: string, args: any[]): string | undefined;
+}
 
-```ts
-import {
-  Cache,
-  ExpirationStrategy,
-  ISyncKeyStrategy,
-  MemoryStorage
-} from "@hokify/node-ts-cache";
-
-class MyKeyStrategy implements ISyncKeyStrategy {
-  public getKey(
+/**
+ * Asynchronous key generation strategy
+ */
+interface IAsyncKeyStrategy {
+  /**
+   * Generate a cache key from method context (can be async)
+   * @param className - Name of the class containing the method
+   * @param methodName - Name of the cached method
+   * @param args - Arguments passed to the method
+   * @returns Cache key string, or undefined to skip caching
+   */
+  getKey(
     className: string,
     methodName: string,
     args: any[]
-  ): Promise<string> | string {
-    // Here you can implement your own way of creating cache keys
-    return `foo bar baz`;
-  }
-}
-
-const myStrategy = new ExpirationStrategy(new MemoryStorage());
-const myKeyStrategy = new MyKeyStrategy();
-
-class MyService {
-  @Cache(myStrategy, { ttl: 60 }, myKeyStrategy)
-  public async getUsers(): Promise<string[]> {
-    return ["Max", "User"];
-  }
+  ): Promise<string | undefined> | string | undefined;
 }
 ```
 
-## Directly
+### ExpirationStrategy Options
 
-```ts
-import { ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
+```typescript
+interface ExpirationOptions {
+  /** Time to live in seconds (default: 60) */
+  ttl?: number;
 
-const myCache = new ExpirationStrategy(new MemoryStorage());
+  /** If true, delete on access after expiration. If false, delete via setTimeout (default: true) */
+  isLazy?: boolean;
 
-class MyService {
-  public async getUsers(): Promise<string[]> {
-    const cachedUsers = await myCache.getItem<string[]>("users");
-    if (cachedUsers) {
-      return cachedUsers;
-    }
+  /** If true, cache forever ignoring TTL (default: false) */
+  isCachedForever?: boolean;
+}
+```
 
-    const newUsers = ["Max", "User"];
-    await myCache.setItem("users", newUsers, { ttl: 60 });
+## Advanced Usage
 
-    return newUsers;
+### Call Deduplication
+
+The `@Cache` decorator automatically deduplicates concurrent calls with the same cache key. If multiple calls are made before the first one completes, they all receive the same result:
+
+```typescript
+class DataService {
+  @Cache(strategy, { ttl: 60 })
+  async fetchData(id: string): Promise<Data> {
+    console.log("Fetching..."); // Only logged once
+    return await slowApiCall(id);
+  }
+}
+
+const service = new DataService();
+
+// All three calls share the same pending promise
+const [a, b, c] = await Promise.all([
+  service.fetchData("123"),
+  service.fetchData("123"),
+  service.fetchData("123")
+]);
+// "Fetching..." is logged only once, all three get the same result
+```
+
+### Handling Undefined vs Null
+
+The cache distinguishes between:
+- `undefined`: No value found in cache, or value should not be cached
+- `null`: Explicit null value that is cached
+
+```typescript
+class UserService {
+  @Cache(strategy, { ttl: 60 })
+  async findUser(id: string): Promise<User | null> {
+    const user = await db.findUser(id);
+    // Return null for non-existent users to cache the "not found" result
+    // Return undefined would cause re-fetching on every call
+    return user ?? null;
   }
 }
 ```
 
-# Strategies
+### Error Handling
 
-## ExpirationStrategy
+Cache errors are logged but don't break the application flow. If caching fails, the method executes normally:
 
-Cached items expire after a given amount of time.
+```typescript
+// Cache read/write failures are logged as warnings:
+// "@hokify/node-ts-cache: reading cache failed [key] [error]"
+// "@hokify/node-ts-cache: writing result to cache failed [key] [error]"
 
-- `ttl`: _(Default: 60)_ Number of seconds to expire the cachte item
-- `isLazy`: _(Default: true)_ If true, expired cache entries will be deleted on touch. If false, entries will be deleted after the given _ttl_.
-- `isCachedForever`: _(Default: false)_ If true, cache entry has no expiration.
-
-# Storages
-
-| Storage          |                 Needed library                 |
-| ---------------- | :--------------------------------------------: |
-| FsStorage        |                   (bundled)                    |
-| MemoryStorage    |                   (bundled)                    |
-| RedisStorage     |   `npm install @hokify/node-ts-cache-redis-storage`    |
-| RedisIOStorage   |  `npm install @hokify/node-ts-cache-redisio-storage`   |
-| NodeCacheStorage | `npm install @hokify/node-ts-cache-node-cache-storage` |
-| LRUStorage       |       `npm install node-ts-lru-storage`        |
-
-#### MemoryStorage()
-
-in memory
-
-```
-import { Cache, ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
-
-const myStrategy = new ExpirationStrategy(new MemoryStorage());
+// For RedisIOStorage, you can add a custom error handler:
+storage.onError((error) => {
+  metrics.incrementCacheError();
+  logger.error("Cache error", error);
+});
 ```
 
-#### FsJsonStorage(`fileName: string`)
+## Environment Variables
 
-file based
+| Variable | Description |
+|----------|-------------|
+| `DISABLE_CACHE_DECORATOR` | Set to any value to disable all `@Cache` decorators (useful for debugging) |
 
-```
-import { Cache, ExpirationStrategy, FileStorage } from "@hokify/node-ts-cache";
-
-const myStrategy = new ExpirationStrategy(new FileStorage());
-```
-
-#### RedisStorage(`clientOpts:` [RedisClientOptions](https://github.com/NodeRedis/node_redis#options-object-properties))
-
-redis client backend
-
-```
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import RedisStorage from 'node-ts-cache-redis-storage';
-
-const myStrategy = new ExpirationStrategy(new RedisStorage());
-```
-
-#### RedisIOStorage(`clientOpts:` [RedisIOClientOptions](https://github.com/NodeRedis/node_redis#options-object-properties))
-
-redis io client backend
-
-```
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import RedisIOStorage from 'node-ts-cache-redisio-storage';
-
-const myStrategy = new RedisIOStorage();
-```
-
-#### NodeCacheStorage(`options:` [NodeCacheOptions](https://www.npmjs.com/package/node-cache#options))
-
-wrapper for [node-cache](https://www.npmjs.com/package/node-cache)
-
-```
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import NodeCacheStorage from 'node-ts-cache-node-cache-storage';
-
-const myStrategy = new NodeCacheStorage();
-```
-
-#### LRUStorage(`options:` [LRUCacheOptions](https://www.npmjs.com/package/lru-cache#options))
-
-wrapper for [lru-cache](https://www.npmjs.com/package/lru-cache)
-
-```
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import LRUStorage from 'node-ts-cache-lru-storage';
-
-const myStrategy = new LRUStorage();
-```
-
-
-#### LRURedisStorage(`options:` [LRUCacheOptions](https://www.npmjs.com/package/lru-cache#options), () => Redis.Redis)
-
-wrapper for [lru-cache](https://www.npmjs.com/package/lru-cache) with a remote cache redis backend
-
-```
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import LRUStorage from 'node-ts-cache-lru-redis-storage';
-
-const myStrategy = new LRUStorage({}, () => RedisConnectionInstance);
-```
-
-# Test
+## Testing
 
 ```bash
+# Run all tests
 npm test
+
+# Run tests in watch mode
+npm run tdd
+
+# Run tests with debugger
+npm run tdd-debug-brk
 ```
+
+## API Reference
+
+### Exports
+
+```typescript
+// Decorators
+export { Cache } from "./decorator/cache.decorator";
+export { SyncCache } from "./decorator/synccache.decorator";
+export { MultiCache } from "./decorator/multicache.decorator";
+
+// Strategies
+export { ExpirationStrategy } from "./strategy/caching/expiration.strategy";
+
+// Built-in Storages
+export { MemoryStorage } from "./storage/memory";
+export { FsJsonStorage } from "./storage/fs";
+
+// Interfaces
+export {
+  IAsynchronousCacheType,
+  ISynchronousCacheType,
+  IMultiIAsynchronousCacheType,
+  IMultiSynchronousCacheType
+} from "./types/cache.types";
+export { ISyncKeyStrategy, IAsyncKeyStrategy } from "./types/key.strategy.types";
+```
+
+## License
+
+MIT License
