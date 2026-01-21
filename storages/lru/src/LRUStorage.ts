@@ -1,14 +1,26 @@
-import type { IMultiSynchronousCacheType, ISynchronousCacheType } from '@hokify/node-ts-cache';
+import type { IMultiSynchronousCacheType, ISynchronousCacheType } from '@node-ts-cache/core';
 
-import LRU from 'lru-cache';
+import { LRUCache } from 'lru-cache';
+
+export interface LRUStorageOptions {
+	/** Maximum number of items in cache (required) */
+	max: number;
+	/** Time to live in seconds */
+	ttl?: number;
+	/** Maximum size (if using sizeCalculation) */
+	maxSize?: number;
+}
 
 export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCacheType {
-	myCache: LRU<string, unknown>;
+	// Using 'any' for cache value type as it needs to store arbitrary data
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	myCache: LRUCache<string, any>;
 
-	constructor(/** maxAge in seconds! */ private options: LRU.Options<string, unknown>) {
-		this.myCache = new LRU({
-			...options,
-			maxAge: options.maxAge ? options.maxAge * 1000 : undefined
+	constructor(/** ttl in seconds! */ options: LRUStorageOptions) {
+		this.myCache = new LRUCache({
+			max: options.max,
+			ttl: options.ttl ? options.ttl * 1000 : undefined,
+			maxSize: options.maxSize
 		});
 	}
 
@@ -33,10 +45,6 @@ export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCache
 	}
 
 	public clear(): void {
-		// flush not supported, recreate lru cache instance
-		this.myCache = new LRU({
-			...this.options,
-			maxAge: this.options.maxAge ? this.options.maxAge * 1000 : undefined // in ms
-		});
+		this.myCache.clear();
 	}
 }

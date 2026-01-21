@@ -1,8 +1,8 @@
 # node-ts-cache
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/core.svg)](https://www.npmjs.org/package/@node-ts-cache/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/@hokify/node-ts-cache.svg)](https://nodejs.org)
+[![Node.js Version](https://img.shields.io/node/v/@node-ts-cache/core.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.1-blue.svg)](https://www.typescriptlang.org/)
 
 Simple and extensible caching module for TypeScript/Node.js with decorator support.
@@ -19,11 +19,11 @@ Simple and extensible caching module for TypeScript/Node.js with decorator suppo
 ## Quick Start
 
 ```bash
-npm install @hokify/node-ts-cache
+npm install @node-ts-cache/core
 ```
 
 ```typescript
-import { Cache, ExpirationStrategy, MemoryStorage } from '@hokify/node-ts-cache';
+import { Cache, ExpirationStrategy, MemoryStorage } from '@node-ts-cache/core';
 
 const cacheStrategy = new ExpirationStrategy(new MemoryStorage());
 
@@ -42,19 +42,19 @@ This is a monorepo containing the following packages:
 
 ### Core Package
 
-| Package                             | Version                                                        | Description                                                            |
-| ----------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [@hokify/node-ts-cache](./ts-cache) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache.svg) | Core caching module with decorators, strategies, and built-in storages |
+| Package                           | Version                                                      | Description                                                            |
+| --------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [@node-ts-cache/core](./ts-cache) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/core.svg) | Core caching module with decorators, strategies, and built-in storages |
 
 ### Storage Adapters
 
-| Package                                                           | Version                                                                           | Description                                            |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [@hokify/node-ts-cache-redis-storage](./storages/redis)           | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redis-storage.svg)      | Redis storage using `redis` package (v3.x)             |
-| [@hokify/node-ts-cache-redisio-storage](./storages/redisio)       | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redisio-storage.svg)    | Redis storage using `ioredis` with compression support |
-| [@hokify/node-ts-cache-node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-node-cache-storage.svg) | In-memory cache using `node-cache`                     |
-| [@hokify/node-ts-cache-lru-storage](./storages/lru)               | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-storage.svg)        | LRU cache with automatic eviction                      |
-| [@hokify/node-ts-cache-lru-redis-storage](./storages/lru-redis)   | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-redis-storage.svg)  | Two-tier caching (local LRU + remote Redis)            |
+| Package                                                    | Version                                                                    | Description                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [@node-ts-cache/redis-storage](./storages/redis)           | ![npm](https://img.shields.io/npm/v/@node-ts-cache/redis-storage.svg)      | Redis storage using `redis` package (v3.x)             |
+| [@node-ts-cache/ioredis-storage](./storages/redisio)       | ![npm](https://img.shields.io/npm/v/@node-ts-cache/ioredis-storage.svg)    | Redis storage using `ioredis` with compression support |
+| [@node-ts-cache/node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/node-cache-storage.svg) | In-memory cache using `node-cache`                     |
+| [@node-ts-cache/lru-storage](./storages/lru)               | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-storage.svg)        | LRU cache with automatic eviction                      |
+| [@node-ts-cache/lru-redis-storage](./storages/lru-redis)   | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-redis-storage.svg)  | Two-tier caching (local LRU + remote Redis)            |
 
 ## Documentation
 

@@ -1,7 +1,7 @@
 import * as Assert from 'assert';
 import LRUStorage from '../src/index.js';
 
-const storage = new LRUStorage({});
+const storage = new LRUStorage({ max: 500 });
 
 describe('LRUStorage', () => {
 	it('Should add cache item correctly', async () => {

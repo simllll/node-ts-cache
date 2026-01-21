@@ -1,5 +1,5 @@
 {
-	"name": "@hokify/node-ts-cache-node-cache-storage",
+	"name": "@node-ts-cache/node-cache-storage",
 	"version": "2.0.1",
 	"description": "Simple and extensible caching module supporting decorators",
 	"keywords": [
@@ -44,7 +44,7 @@
 		"node-cache": "^5.1.2"
 	},
 	"devDependencies": {
-		"@hokify/node-ts-cache": "^6.0.1",
+		"@node-ts-cache/core": "^6.0.1",
 		"@types/node-cache": "^4.2.5"
 	},
 	"engines": {

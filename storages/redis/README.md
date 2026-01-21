@@ -1,15 +1,15 @@
-# @hokify/node-ts-cache-redis-storage
+# @node-ts-cache/redis-storage
 
-[![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redis-storage.svg)](https://www.npmjs.org/package/@hokify/node-ts-cache-redis-storage)
+[![npm](https://img.shields.io/npm/v/@node-ts-cache/redis-storage.svg)](https://www.npmjs.org/package/@node-ts-cache/redis-storage)
 
-Redis storage adapter for [@hokify/node-ts-cache](https://www.npmjs.com/package/@hokify/node-ts-cache) using the legacy `redis` package (v3.x).
+Redis storage adapter for [@node-ts-cache/core](https://www.npmjs.com/package/@node-ts-cache/core) using the legacy `redis` package (v3.x).
 
-> **Note:** For new projects, consider using [@hokify/node-ts-cache-redisio-storage](https://www.npmjs.com/package/@hokify/node-ts-cache-redisio-storage) which uses the modern `ioredis` client with additional features like compression and multi-operations.
+> **Note:** For new projects, consider using [@node-ts-cache/ioredis-storage](https://www.npmjs.com/package/@node-ts-cache/ioredis-storage) which uses the modern `ioredis` client with additional features like compression and multi-operations.
 
 ## Installation
 
 ```bash
-npm install @hokify/node-ts-cache @hokify/node-ts-cache-redis-storage
+npm install @node-ts-cache/core @node-ts-cache/redis-storage
 ```
 
 ## Usage
@@ -17,8 +17,8 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-redis-storage
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
-import RedisStorage from '@hokify/node-ts-cache-redis-storage';
+import { Cache, ExpirationStrategy } from '@node-ts-cache/core';
+import RedisStorage from '@node-ts-cache/redis-storage';
 
 const storage = new RedisStorage({
 	host: 'localhost',

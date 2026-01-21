@@ -1,5 +1,5 @@
 {
-	"name": "@hokify/node-ts-cache",
+	"name": "@node-ts-cache/core",
 	"version": "6.0.1",
 	"description": "Simple and extensible caching module supporting decorators",
 	"keywords": [
@@ -26,7 +26,7 @@
 		"url": "git+https://github.com/simllll/node-ts-cache.git"
 	},
 	"license": "MIT",
-	"author": "Simon Tretter <simon.tretter@hokify.com>",
+	"author": "Simon Tretter <s.tretter@gmail.com>",
 	"contributors": [
 		"Himmet Avsar <avsar.himmet1@gmail.com>"
 	],
