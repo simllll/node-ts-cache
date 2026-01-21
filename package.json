@@ -5,6 +5,10 @@
     "publish": "lerna publish",
     "build": "lerna run build",
     "test": "lerna run test",
+    "lint": "eslint --ext .ts ts-cache/src storages/*/src",
+    "lint:fix": "eslint --ext .ts ts-cache/src storages/*/src --fix",
+    "format": "prettier --check \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
+    "format:fix": "prettier --write \"**/*.{ts,js,json,md}\" --ignore-path .gitignore",
     "release": "lerna publish",
     "prepublishOnly": "npm run test",
     "check-package-updates": "ncu -u && gulp updatePackages"

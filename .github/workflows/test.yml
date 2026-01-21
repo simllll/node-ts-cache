@@ -38,7 +38,7 @@ jobs:
           CI: true
 
   lint:
-    name: Lint
+    name: Lint & Format
     runs-on: ubuntu-latest
 
     steps:
@@ -54,5 +54,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build (required for type-aware linting)
         run: npm run build
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check Prettier formatting
+        run: npm run format
+        continue-on-error: true  # Existing code has formatting issues
