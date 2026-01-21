@@ -35,7 +35,11 @@ export class ExpirationStrategy extends AbstractBaseStrategy {
 		return item.meta !== false && typeof item.meta.ttl === 'number';
 	}
 
-	public async setItem(key: string, content: unknown, options?: ICacheOptions): Promise<void> {
+	public async setItem<T = unknown>(
+		key: string,
+		content: T | undefined,
+		options?: ICacheOptions
+	): Promise<void> {
 		const mergedOptions: IExpirationOptions = {
 			ttl: 60,
 			isLazy: true,

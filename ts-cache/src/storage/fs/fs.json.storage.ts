@@ -14,7 +14,7 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 		return (await this.getCacheObject())[key] as T | undefined;
 	}
 
-	public async setItem(key: string, content: unknown): Promise<void> {
+	public async setItem<T = unknown>(key: string, content: T | undefined): Promise<void> {
 		const cache = await this.getCacheObject();
 		cache[key] = content;
 		await this.setCache(cache);

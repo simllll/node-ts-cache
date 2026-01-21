@@ -31,8 +31,8 @@ export interface ICacheEntry<T = unknown, M extends ICacheMeta = ICacheMeta> {
 export interface IMultiIAsynchronousCacheType<C = unknown> {
 	getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
 
-	setItems(
-		values: { key: string; content: C | undefined }[],
+	setItems<T extends C = C>(
+		values: { key: string; content: T | undefined }[],
 		options?: ICacheOptions
 	): Promise<void>;
 
@@ -42,7 +42,10 @@ export interface IMultiIAsynchronousCacheType<C = unknown> {
 export interface IMultiSynchronousCacheType<C = unknown> {
 	getItems<T>(keys: string[]): { [key: string]: T | undefined };
 
-	setItems(values: { key: string; content: C | undefined }[], options?: ICacheOptions): void;
+	setItems<T extends C = C>(
+		values: { key: string; content: T | undefined }[],
+		options?: ICacheOptions
+	): void;
 
 	clear(): void;
 }
@@ -50,7 +53,7 @@ export interface IMultiSynchronousCacheType<C = unknown> {
 export interface IAsynchronousCacheType<C = unknown> {
 	getItem<T>(key: string): Promise<T | undefined>;
 
-	setItem(key: string, content: C | undefined, options?: ICacheOptions): Promise<void>;
+	setItem<T extends C = C>(key: string, content: T | undefined, options?: ICacheOptions): Promise<void>;
 
 	clear(): Promise<void>;
 }
@@ -58,7 +61,7 @@ export interface IAsynchronousCacheType<C = unknown> {
 export interface ISynchronousCacheType<C = unknown> {
 	getItem<T>(key: string): T | undefined;
 
-	setItem(key: string, content: C | undefined, options?: ICacheOptions): void;
+	setItem<T extends C = C>(key: string, content: T | undefined, options?: ICacheOptions): void;
 
 	clear(): void;
 }

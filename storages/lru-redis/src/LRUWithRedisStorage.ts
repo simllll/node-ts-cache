@@ -45,7 +45,11 @@ export class LRUWithRedisStorage implements IAsynchronousCacheType {
 	}
 
 	/** ttl in seconds! */
-	public async setItem(key: string, content: unknown, options?: { ttl?: number }): Promise<void> {
+	public async setItem<T = unknown>(
+		key: string,
+		content: T | undefined,
+		options?: { ttl?: number }
+	): Promise<void> {
 		this.myCache.set(key, content);
 		if (this.options?.maxAge) {
 			await this.redis().setex(key, options?.ttl || this.options.maxAge, JSON.stringify(content));

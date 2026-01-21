@@ -20,26 +20,23 @@ export class RedisStorage implements IAsynchronousCacheType {
 		if (entry === null) {
 			return undefined;
 		}
-		let finalItem: unknown = entry;
+		// Try to parse as JSON, fallback to raw string
+		let parsedItem: T | string = entry;
 		try {
-			finalItem = JSON.parse(entry);
+			parsedItem = JSON.parse(entry) as T;
 		} catch (error) {
-			/** ignore */
+			/** Not JSON, keep as string */
 		}
-		return finalItem as T | undefined;
+		return parsedItem as T | undefined;
 	}
 
-	public async setItem(key: string, content: unknown): Promise<void> {
-		let stringContent: string;
+	public async setItem<T = unknown>(key: string, content: T | undefined): Promise<void> {
 		if (content === undefined) {
 			await this.client.delAsync(key);
 			return;
 		}
-		if (typeof content === 'object') {
-			stringContent = JSON.stringify(content);
-		} else {
-			stringContent = String(content);
-		}
+		const stringContent: string =
+			typeof content === 'object' ? JSON.stringify(content) : String(content);
 		await this.client.setAsync(key, stringContent);
 	}
 

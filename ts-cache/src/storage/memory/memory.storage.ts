@@ -7,7 +7,7 @@ export class MemoryStorage implements ISynchronousCacheType {
 		return this.memCache[key] as T | undefined;
 	}
 
-	public setItem(key: string, content: unknown): void {
+	public setItem<T = unknown>(key: string, content: T | undefined): void {
 		this.memCache[key] = content;
 	}
 

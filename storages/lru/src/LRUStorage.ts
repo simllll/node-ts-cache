@@ -18,7 +18,7 @@ export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCache
 		};
 	}
 
-	setItems(values: { key: string; content: unknown }[]): void {
+	setItems<T = unknown>(values: { key: string; content: T | undefined }[]): void {
 		values.forEach(val => {
 			this.myCache.set(val.key, val.content);
 		});
@@ -28,7 +28,7 @@ export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCache
 		return this.myCache.get(key) as T | undefined;
 	}
 
-	public setItem(key: string, content: unknown): void {
+	public setItem<T = unknown>(key: string, content: T | undefined): void {
 		this.myCache.set(key, content);
 	}
 
