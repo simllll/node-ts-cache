@@ -53,7 +53,11 @@ export interface IMultiSynchronousCacheType<C = unknown> {
 export interface IAsynchronousCacheType<C = unknown> {
 	getItem<T>(key: string): Promise<T | undefined>;
 
-	setItem<T extends C = C>(key: string, content: T | undefined, options?: ICacheOptions): Promise<void>;
+	setItem<T extends C = C>(
+		key: string,
+		content: T | undefined,
+		options?: ICacheOptions
+	): Promise<void>;
 
 	clear(): Promise<void>;
 }

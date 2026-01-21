@@ -86,7 +86,11 @@ class CustomJsonStrategy implements ISyncKeyStrategy {
  * This custom test key strategy only uses the method name as caching key
  */
 class CustomKeyStrategy implements IAsyncKeyStrategy {
-	public getKey(_className: string, methodName: string, _args: unknown[]): Promise<string> | string {
+	public getKey(
+		_className: string,
+		methodName: string,
+		_args: unknown[]
+	): Promise<string> | string {
 		return new Promise(resolve => {
 			setTimeout(() => resolve(methodName), 0);
 		});

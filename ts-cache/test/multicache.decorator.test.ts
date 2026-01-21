@@ -41,10 +41,7 @@ class TestClassOne {
 	callCount = 0;
 
 	@MultiCache([canonicalLRUStrategy, canonicalRedisStrategy], 0, canonicalKeyStrategy)
-	public async getCanonicalUrlsFromCache(
-		urls: UrlEntry[],
-		geoRegion: string
-	): Promise<string[]> {
+	public async getCanonicalUrlsFromCache(urls: UrlEntry[], geoRegion: string): Promise<string[]> {
 		console.log('getCanonicalUrlsFromCache', urls, geoRegion);
 		return urls.map(p => {
 			return p.path + 'RETURN VALUE' + geoRegion;
