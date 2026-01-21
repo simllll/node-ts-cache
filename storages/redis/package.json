@@ -17,13 +17,13 @@
 		"node-cache",
 		"ts-cache"
 	],
-	"homepage": "https://github.com/hokify/node-ts-cache/tree/master/storages/redis#readme",
+	"homepage": "https://github.com/simllll/node-ts-cache/tree/master/storages/redis#readme",
 	"bugs": {
-		"url": "https://github.com/hokify/node-ts-cache/issues"
+		"url": "https://github.com/simllll/node-ts-cache/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/hokify/node-ts-cache.git"
+		"url": "git+https://github.com/simllll/node-ts-cache.git"
 	},
 	"license": "MIT",
 	"author": "Simon Tretter <simon.tretter@hokify.com>",
