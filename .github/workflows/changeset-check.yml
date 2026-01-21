@@ -9,6 +9,8 @@ jobs:
   check:
     name: Check for changeset
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout repository
@@ -16,37 +18,69 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
       - name: Check for changeset
+        id: check
         run: |
-          # Skip check for release PRs and bot PRs
+          # Skip check for release PRs
           if [[ "${{ github.head_ref }}" == "changeset-release/"* ]]; then
-            echo "Skipping changeset check for release PR"
+            echo "skip=true" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          # Check if any changeset files exist (excluding config.json)
-          CHANGESETS=$(find .changeset -name "*.md" -type f 2>/dev/null | wc -l)
+          # Check if any changeset files exist (excluding config.json and README)
+          CHANGESETS=$(find .changeset -name "*.md" -type f ! -name "README.md" 2>/dev/null | wc -l)
 
           if [ "$CHANGESETS" -eq 0 ]; then
-            echo "::error::No changeset found! Please run 'pnpm changeset' to create one."
-            echo ""
-            echo "A changeset describes what changes you made and how they affect the packages."
-            echo ""
-            echo "Run: pnpm changeset"
-            echo "Then select the packages you changed and the type of change (patch/minor/major)."
-            exit 1
+            echo "found=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
-          echo "Found $CHANGESETS changeset(s)"
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "count=$CHANGESETS" >> $GITHUB_OUTPUT
+
+      - name: Post or update comment
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const found = '${{ steps.check.outputs.found }}' === 'true';
+            const count = '${{ steps.check.outputs.count }}';
+
+            const marker = '<!-- changeset-check-comment -->';
+
+            let body;
+            if (found) {
+              body = `${marker}\n✅ **Changeset found** (${count} changeset file(s))\n\nThis PR will be included in the next release.`;
+            } else {
+              body = `${marker}\n⚠️ **No changeset found**\n\nThis PR doesn't have a changeset. If this PR should trigger a release, please add one:\n\n### Option 1: Comment command\nComment on this PR:\n\`\`\`\n/changeset patch\nYour change description here\n\`\`\`\n\nOr specify packages:\n\`\`\`\n/changeset minor @node-ts-cache/core\nAdded new caching feature\n\`\`\`\n\n### Option 2: Manual\n\`\`\`bash\npnpm changeset\ngit add .changeset && git commit -m "chore: add changeset" && git push\n\`\`\`\n\n---\n*If this PR doesn't need a release (e.g., docs, CI changes), you can ignore this message.*`;
+            }
+
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+
+            const existing = comments.data.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+            // Fail the check if no changeset found
+            if (!found) {
+              core.setFailed('No changeset found. See comment for instructions.');
+            }
