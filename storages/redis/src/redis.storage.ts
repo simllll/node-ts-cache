@@ -13,7 +13,6 @@ export class RedisStorage implements IAsynchronousCacheType {
 
 	constructor(private redisOptions: ClientOpts, redis = Redis) {
 		this.client = redis.createClient(this.redisOptions) as IRedisClient;
-		console.log('this.client', this.client);
 	}
 
 	public async getItem<T>(key: string): Promise<T> {
