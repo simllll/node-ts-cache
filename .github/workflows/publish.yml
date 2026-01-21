@@ -175,7 +175,7 @@ jobs:
       - name: Publish to npm
         if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
         run: |
-          npx lerna publish from-git --yes
+          npx lerna publish from-git --yes -- --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
