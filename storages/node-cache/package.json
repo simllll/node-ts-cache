@@ -1,6 +1,6 @@
 {
 	"name": "@node-ts-cache/node-cache-storage",
-	"version": "2.0.1",
+	"version": "1.0.0",
 	"description": "Simple and extensible caching module supporting decorators",
 	"keywords": [
 		"node",
@@ -44,7 +44,7 @@
 		"node-cache": "^5.1.2"
 	},
 	"devDependencies": {
-		"@node-ts-cache/core": "^6.0.1",
+		"@node-ts-cache/core": "workspace:*",
 		"@types/node-cache": "^4.2.5"
 	},
 	"engines": {
