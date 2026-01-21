@@ -1,0 +1,196 @@
+name: Changeset Bot
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  changeset:
+    name: Create Changeset
+    if: |
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/changeset')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: React to comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      - name: Get PR branch
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('branch', pr.data.head.ref);
+            core.setOutput('title', pr.data.title);
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Parse command
+        id: parse
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = context.payload.comment.body.trim();
+            const lines = comment.split('\n');
+            const firstLine = lines[0].trim();
+
+            // Parse: /changeset [patch|minor|major] [package1,package2]
+            const match = firstLine.match(/^\/changeset\s+(patch|minor|major)(?:\s+(.+))?$/i);
+
+            if (!match) {
+              core.setFailed('Invalid format. Use: /changeset <patch|minor|major> [package1,package2]');
+              return;
+            }
+
+            const bump = match[1].toLowerCase();
+            const packagesArg = match[2];
+
+            // Get summary from rest of comment or PR title
+            let summary = lines.slice(1).join('\n').trim();
+            if (!summary) {
+              summary = '${{ steps.pr.outputs.title }}';
+            }
+
+            core.setOutput('bump', bump);
+            core.setOutput('packages', packagesArg || '');
+            core.setOutput('summary', summary);
+
+      - name: Get changed packages
+        id: packages
+        run: |
+          if [ -n "${{ steps.parse.outputs.packages }}" ]; then
+            echo "packages=${{ steps.parse.outputs.packages }}" >> $GITHUB_OUTPUT
+          else
+            # Auto-detect from changed files
+            CHANGED=$(git diff --name-only origin/main...HEAD | grep -E "^(ts-cache|storages)/" | cut -d'/' -f1-2 | sort -u | tr '\n' ',' | sed 's/,$//')
+            if [ -z "$CHANGED" ]; then
+              CHANGED="ts-cache"
+            fi
+            echo "packages=$CHANGED" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create changeset
+        run: |
+          BUMP="${{ steps.parse.outputs.bump }}"
+          PACKAGES="${{ steps.packages.outputs.packages }}"
+          SUMMARY="${{ steps.parse.outputs.summary }}"
+
+          # Generate random filename
+          FILENAME=".changeset/$(echo $RANDOM | md5sum | head -c 12).md"
+
+          # Map folder names to package names
+          get_package_name() {
+            case "$1" in
+              ts-cache) echo "@node-ts-cache/core" ;;
+              storages/lru) echo "@node-ts-cache/lru-storage" ;;
+              storages/redis) echo "@node-ts-cache/redis-storage" ;;
+              storages/redisio) echo "@node-ts-cache/ioredis-storage" ;;
+              storages/node-cache) echo "@node-ts-cache/node-cache-storage" ;;
+              storages/lru-redis) echo "@node-ts-cache/lru-redis-storage" ;;
+              *) echo "$1" ;;
+            esac
+          }
+
+          # Create changeset content
+          echo "---" > "$FILENAME"
+
+          IFS=',' read -ra PKGS <<< "$PACKAGES"
+          for pkg in "${PKGS[@]}"; do
+            pkg=$(echo "$pkg" | xargs)  # trim whitespace
+            pkg_name=$(get_package_name "$pkg")
+            echo "\"$pkg_name\": $BUMP" >> "$FILENAME"
+          done
+
+          echo "---" >> "$FILENAME"
+          echo "" >> "$FILENAME"
+          echo "$SUMMARY" >> "$FILENAME"
+
+          echo "Created changeset:"
+          cat "$FILENAME"
+
+      - name: Commit and push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .changeset/
+          git commit -m "chore: add changeset"
+          git push
+
+      - name: React success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
+      - name: Comment success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ Changeset created!\n\n**Type:** ${{ steps.parse.outputs.bump }}\n**Packages:** ${{ steps.packages.outputs.packages }}\n**Summary:** ${{ steps.parse.outputs.summary }}`
+            });
+
+      - name: React failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'confused'
+            });
+
+      - name: Comment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `❌ Failed to create changeset. Please check the [workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n**Usage:**\n\`\`\`\n/changeset patch\n/changeset minor\n/changeset major @node-ts-cache/core,@node-ts-cache/lru-storage\n\`\`\`\n\nAdd a summary on the next line:\n\`\`\`\n/changeset patch\nFixed a bug in cache expiration\n\`\`\``
+            });
