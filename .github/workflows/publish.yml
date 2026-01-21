@@ -1,0 +1,212 @@
+name: Release and Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type (auto = determined by conventional commits)'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: 'Dry run (preview changes without publishing)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    name: Release and Publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm run test
+        env:
+          CI: true
+
+      - name: Check for changes
+        id: check
+        run: |
+          CHANGED=$(npx lerna changed --json 2>/dev/null || echo "[]")
+          if [ "$CHANGED" == "[]" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No packages have changed since last release"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changed packages:"
+            echo "$CHANGED" | jq -r '.[].name'
+          fi
+
+      - name: Dry Run - Preview Changes
+        if: inputs.dry_run == true
+        run: |
+          echo "=== DRY RUN MODE ==="
+          echo ""
+          echo "Version type: ${{ inputs.version_type }}"
+          if [ "${{ inputs.version_type }}" == "auto" ]; then
+            echo "  (auto = determined by conventional commits)"
+            echo "  - fix: commits → patch bump"
+            echo "  - feat: commits → minor bump"
+            echo "  - BREAKING CHANGE → major bump"
+          fi
+          echo ""
+          echo "=== Changed packages ==="
+          npx lerna changed -l || echo "No packages changed"
+          echo ""
+          echo "=== Preview version bumps ==="
+          VERSION_ARG=""
+          if [ "${{ inputs.version_type }}" != "auto" ]; then
+            VERSION_ARG="${{ inputs.version_type }}"
+          fi
+          npx lerna version $VERSION_ARG --conventional-commits --no-git-tag-version --no-push --yes 2>/dev/null || true
+          echo ""
+          echo "=== Files that would change ==="
+          git diff --name-only
+          git checkout -- .
+
+      - name: Version packages
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        id: version
+        run: |
+          # Determine version argument (empty for auto = let conventional commits decide)
+          VERSION_ARG=""
+          if [ "${{ inputs.version_type }}" != "auto" ]; then
+            VERSION_ARG="${{ inputs.version_type }}"
+          fi
+
+          # Version packages with conventional commits
+          # When VERSION_ARG is empty (auto), lerna uses conventional commits to determine version:
+          # fix: → patch, feat: → minor, BREAKING CHANGE → major
+          npx lerna version $VERSION_ARG \
+            --yes \
+            --conventional-commits \
+            --changelog-preset angular \
+            --message "chore(release): publish"
+
+          # Get the new version for release notes
+          NEW_VERSION=$(node -p "require('./lerna.json').version || 'independent'")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Release Notes
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        id: release_notes
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # Generate changelog from commits
+          if [ -n "$LATEST_TAG" ]; then
+            PREV_TAG=$(git describe --tags --abbrev=0 ${LATEST_TAG}^ 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              COMMITS=$(git log ${PREV_TAG}..${LATEST_TAG} --pretty=format:"- %s (%h)" --no-merges)
+            else
+              COMMITS=$(git log ${LATEST_TAG} --pretty=format:"- %s (%h)" --no-merges -20)
+            fi
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          fi
+
+          # Create release notes file
+          cat > release_notes.md << 'NOTES_EOF'
+          ## What's Changed
+
+          NOTES_EOF
+
+          # Add package versions
+          echo "### Published Packages" >> release_notes.md
+          echo "" >> release_notes.md
+          npx lerna ls -l --json | jq -r '.[] | "- \(.name)@\(.version)"' >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Add commits
+          echo "### Commits" >> release_notes.md
+          echo "" >> release_notes.md
+          if [ -n "$COMMITS" ]; then
+            echo "$COMMITS" >> release_notes.md
+          else
+            echo "- Initial release" >> release_notes.md
+          fi
+          echo "" >> release_notes.md
+
+          # Add install instructions
+          echo "### Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo 'npm install @hokify/node-ts-cache' >> release_notes.md
+          echo '```' >> release_notes.md
+
+          cat release_notes.md
+
+      - name: Publish to npm
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
+          npx lerna publish from-git --yes
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
+          # Get the latest tag created by lerna
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+
+          # Create the GitHub release
+          gh release create "$LATEST_TAG" \
+            --title "Release $LATEST_TAG" \
+            --notes-file release_notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Successfully released the following packages:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npx lerna ls -l --json | jq -r '.[] | "- **\(.name)** @ \(.version)"' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "GitHub Release: https://github.com/${{ github.repository }}/releases/tag/$LATEST_TAG" >> $GITHUB_STEP_SUMMARY
+
+      - name: No changes to release
+        if: steps.check.outputs.changed == 'false'
+        run: |
+          echo "## No Changes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No packages have changed since the last release. Nothing to publish." >> $GITHUB_STEP_SUMMARY

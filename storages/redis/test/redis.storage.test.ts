@@ -16,13 +16,12 @@ const storage = new RedisStorage(
 	RedisMock
 );
 
-
 describe('RedisStorage', () => {
 	it('Should clear Redis without errors', async () => {
 		await storage.clear();
 	});
 
-    /*
+	/*
 	it('Should delete cache item if set to undefined', async () => {
 		await storage.setItem('test', undefined);
 
@@ -39,12 +38,15 @@ describe('RedisStorage', () => {
 	});
 
 	it.skip('Should throw an Error if connection to redis fails', async () => {
-		const testStorage = new RedisStorage({
-			host: 'unknown-host',
-			port: 123,
-			password: 'pass',
-			connect_timeout: 1000
-		}, RedisMock);
+		const testStorage = new RedisStorage(
+			{
+				host: 'unknown-host',
+				port: 123,
+				password: 'pass',
+				connect_timeout: 1000
+			},
+			RedisMock
+		);
 
 		const errorMsg = 'Should have thrown an error, but did not';
 		try {

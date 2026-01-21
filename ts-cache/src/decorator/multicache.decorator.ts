@@ -51,9 +51,9 @@ export function MultiCache(
 			};
 
 			const parameters = args[parameterIndex];
-			const cacheKeys: (string | undefined)[] = parameters.map((parameter: any) => {
-				return keyStrategy.getKey(className, methodName, parameter, args, 'read');
-			});
+			const cacheKeys: (string | undefined)[] = parameters.map((parameter: any) =>
+				keyStrategy.getKey(className, methodName, parameter, args, 'read')
+			);
 
 			let result: any[] = [];
 			if (!process.env.DISABLE_CACHE_DECORATOR) {

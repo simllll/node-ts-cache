@@ -27,27 +27,27 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 	}
 
 	private async setCache(newCache: any): Promise<void> {
-		await new Promise<void>((resolve, reject) =>
+		await new Promise<void>((resolve, reject) => {
 			writeFile(this.jsonFilePath, JSON.stringify(newCache), err => {
 				if (err) {
 					reject(err);
 					return;
 				}
 				resolve();
-			})
-		);
+			});
+		});
 	}
 
 	private async getCacheObject(): Promise<any> {
-		const fileContent: Buffer = await new Promise((resolve, reject) =>
+		const fileContent: Buffer = await new Promise((resolve, reject) => {
 			readFile(this.jsonFilePath, (err, result) => {
 				if (err) {
 					reject(err);
 					return;
 				}
 				resolve(result);
-			})
-		);
+			});
+		});
 
 		return JSON.parse(fileContent.toString());
 	}
