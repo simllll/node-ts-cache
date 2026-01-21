@@ -1,11 +1,24 @@
 import { IMultiIAsynchronousCacheType, IMultiSynchronousCacheType } from '../types/cache.types.js';
 
-const defaultKeyStrategy = {
+/**
+ * Key strategy interface for multi-cache operations
+ */
+export interface IMultiCacheKeyStrategy {
 	getKey(
 		className: string,
 		methodName: string,
-		parameter: any,
-		args: any,
+		parameter: unknown,
+		args: unknown[],
+		phase: 'read' | 'write'
+	): string | undefined;
+}
+
+const defaultKeyStrategy: IMultiCacheKeyStrategy = {
+	getKey(
+		className: string,
+		methodName: string,
+		parameter: unknown,
+		args: unknown[],
 		_phase: 'read' | 'write'
 	): string | undefined {
 		return `${className}:${methodName}:${JSON.stringify(parameter)}:${JSON.stringify(args)}`;
@@ -15,23 +28,19 @@ const defaultKeyStrategy = {
 export function MultiCache(
 	cachingStrategies: (IMultiIAsynchronousCacheType | IMultiSynchronousCacheType)[],
 	parameterIndex = 0,
-	keyStrategy = defaultKeyStrategy
+	keyStrategy: IMultiCacheKeyStrategy = defaultKeyStrategy
 ) {
 	return function (
 		// eslint-disable-next-line @typescript-eslint/ban-types
-		target: Object /* & {
-      __cache_decarator_pending_results: {
-        [key: string]: Promise<any> | undefined;
-      };
-    } */,
+		target: Object,
 		methodName: string,
 		descriptor: PropertyDescriptor
 	) {
 		const originalMethod = descriptor.value;
 		const className = target.constructor.name;
 
-		descriptor.value = async function (...args: any[]) {
-			const runMethod = async (newSet: any[]) => {
+		descriptor.value = async function (...args: unknown[]) {
+			const runMethod = async (newSet: unknown[]) => {
 				const newArgs = [...args];
 				newArgs[parameterIndex] = newSet;
 
@@ -50,18 +59,18 @@ export function MultiCache(
 				return methodResult;
 			};
 
-			const parameters = args[parameterIndex];
-			const cacheKeys: (string | undefined)[] = parameters.map((parameter: any) =>
+			const parameters = args[parameterIndex] as unknown[];
+			const cacheKeys: (string | undefined)[] = parameters.map((parameter: unknown) =>
 				keyStrategy.getKey(className, methodName, parameter, args, 'read')
 			);
 
-			let result: any[] = [];
+			let result: unknown[] = [];
 			if (!process.env.DISABLE_CACHE_DECORATOR) {
 				let currentCachingStrategy = 0;
 				do {
 					// console.log('cacheKeys', cacheKeys, currentCachingStrategy)
-					const foundEntries = await (cachingStrategies[currentCachingStrategy] as any).getItems(
-						cacheKeys.filter(key => key !== undefined)
+					const foundEntries = await cachingStrategies[currentCachingStrategy].getItems<unknown>(
+						cacheKeys.filter((key): key is string => key !== undefined)
 					);
 
 					// console.log('foundEntries', foundEntries);
@@ -114,7 +123,7 @@ export function MultiCache(
 					})
 					.filter(k => k !== undefined);
 
-				const originalMethodResult: any[] = await runMethod(missingKeys);
+				const originalMethodResult = (await runMethod(missingKeys)) as unknown[];
 				if (originalMethodResult.length !== missingKeys.length) {
 					throw new Error(
 						`input and output has different size! input: ${cacheKeys.length}, returned ${originalMethodResult.length}`
@@ -136,7 +145,7 @@ export function MultiCache(
 								content
 							};
 						})
-						.filter(f => f !== undefined) as { key: string; content: any }[];
+						.filter((f): f is { key: string; content: unknown } => f !== undefined);
 
 					// console.log('saveToCache', saveToCache);
 

@@ -15,27 +15,35 @@ export class RedisStorage implements IAsynchronousCacheType {
 		this.client = redis.createClient(this.redisOptions) as IRedisClient;
 	}
 
-	public async getItem<T>(key: string): Promise<T> {
-		const entry: any = await this.client.getAsync(key);
-		let finalItem = entry;
+	public async getItem<T>(key: string): Promise<T | undefined> {
+		const entry: string | null = await this.client.getAsync(key);
+		if (entry === null) {
+			return undefined;
+		}
+		let finalItem: unknown = entry;
 		try {
 			finalItem = JSON.parse(entry);
 		} catch (error) {
 			/** ignore */
 		}
-		return finalItem || undefined;
+		return finalItem as T | undefined;
 	}
 
-	public async setItem(key: string, content: any): Promise<void> {
-		if (typeof content === 'object') {
-			content = JSON.stringify(content);
-		} else if (content === undefined) {
-			return this.client.delAsync(key);
+	public async setItem(key: string, content: unknown): Promise<void> {
+		let stringContent: string;
+		if (content === undefined) {
+			await this.client.delAsync(key);
+			return;
 		}
-		return this.client.setAsync(key, content);
+		if (typeof content === 'object') {
+			stringContent = JSON.stringify(content);
+		} else {
+			stringContent = String(content);
+		}
+		await this.client.setAsync(key, stringContent);
 	}
 
 	public async clear(): Promise<void> {
-		return this.client.flushdbAsync();
+		await this.client.flushdbAsync();
 	}
 }

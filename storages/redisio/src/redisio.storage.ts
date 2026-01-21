@@ -18,27 +18,27 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 	}
 
 	async getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }> {
-		const mget = this.options.compress
-			? await (this.redis() as any).mgetBuffer(...keys)
+		const mget: (Buffer | string | null)[] = this.options.compress
+			? await this.redis().mgetBuffer(...keys)
 			: await this.redis().mget(...keys);
 		const res = Object.fromEntries(
 			await Promise.all(
-				mget.map(async (entry: Buffer | string, i: number) => {
+				mget.map(async (entry: Buffer | string | null, i: number) => {
 					if (entry === null) {
 						return [keys[i], undefined]; // value does not exist yet
 					}
 
 					if (entry === '') {
-						return [keys[i], null as any]; // value does exist, but is empty
+						return [keys[i], null]; // value does exist, but is empty
 					}
 
-					let finalItem: string =
+					let finalItem: unknown =
 						entry && this.options.compress
 							? await this.uncompress(entry as Buffer)
 							: (entry as string);
 
 					try {
-						finalItem = finalItem && JSON.parse(finalItem);
+						finalItem = finalItem && JSON.parse(finalItem as string);
 					} catch (error) {
 						/** ignore */
 					}
@@ -62,7 +62,7 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 	}
 
 	async setItems(
-		values: { key: string; content: any }[],
+		values: { key: string; content: unknown }[],
 		options?: { ttl?: number }
 	): Promise<void> {
 		const redisPipeline = this.redis().pipeline();
@@ -102,17 +102,17 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 			return undefined;
 		}
 		if (entry === '') {
-			return null as any;
+			return null as T; // value exists but is empty
 		}
-		let finalItem: string =
+		let finalItem: unknown =
 			entry && this.options.compress ? await this.uncompress(entry as Buffer) : (entry as string);
 
 		try {
-			finalItem = JSON.parse(finalItem);
+			finalItem = JSON.parse(finalItem as string);
 		} catch (error) {
 			/** ignore */
 		}
-		return finalItem as unknown as T;
+		return finalItem as T;
 	}
 
 	public async setItem(key: string, content: unknown, options?: { ttl?: number }): Promise<void> {
@@ -128,7 +128,7 @@ export class RedisIOStorage implements IAsynchronousCacheType, IMultiIAsynchrono
 		}
 
 		const ttl = options?.ttl ?? this.options.maxAge;
-		let savePromise: Promise<any>;
+		let savePromise: Promise<'OK' | null>;
 		if (ttl) {
 			savePromise = this.redis().setex(key, ttl, content as Buffer | string);
 		} else {

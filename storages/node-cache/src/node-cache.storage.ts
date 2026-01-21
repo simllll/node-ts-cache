@@ -13,7 +13,7 @@ export class NodeCacheStorage implements ISynchronousCacheType, IMultiSynchronou
 		return this.myCache.mget(keys);
 	}
 
-	setItems(values: { key: string; content: any }[]): void {
+	setItems(values: { key: string; content: unknown }[]): void {
 		this.myCache.mset(values.map(v => ({ key: v.key, val: v.content })));
 	}
 
@@ -21,7 +21,7 @@ export class NodeCacheStorage implements ISynchronousCacheType, IMultiSynchronou
 		return this.myCache.get(key) || undefined;
 	}
 
-	public setItem(key: string, content: any): void {
+	public setItem(key: string, content: unknown): void {
 		this.myCache.set(key, content);
 	}
 

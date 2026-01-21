@@ -1,6 +1,8 @@
 import { existsSync, writeFileSync, writeFile, readFile } from 'fs';
 import { IAsynchronousCacheType } from '../../types/cache.types.js';
 
+type CacheObject = Record<string, unknown>;
+
 export class FsJsonStorage implements IAsynchronousCacheType {
 	constructor(public jsonFilePath: string) {
 		if (!existsSync(this.jsonFilePath)) {
@@ -9,10 +11,10 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 	}
 
 	public async getItem<T>(key: string): Promise<T | undefined> {
-		return (await this.getCacheObject())[key];
+		return (await this.getCacheObject())[key] as T | undefined;
 	}
 
-	public async setItem(key: string, content: any): Promise<void> {
+	public async setItem(key: string, content: unknown): Promise<void> {
 		const cache = await this.getCacheObject();
 		cache[key] = content;
 		await this.setCache(cache);
@@ -26,7 +28,7 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 		writeFileSync(this.jsonFilePath, JSON.stringify({}));
 	}
 
-	private async setCache(newCache: any): Promise<void> {
+	private async setCache(newCache: CacheObject): Promise<void> {
 		await new Promise<void>((resolve, reject) => {
 			writeFile(this.jsonFilePath, JSON.stringify(newCache), err => {
 				if (err) {
@@ -38,7 +40,7 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 		});
 	}
 
-	private async getCacheObject(): Promise<any> {
+	private async getCacheObject(): Promise<CacheObject> {
 		const fileContent: Buffer = await new Promise((resolve, reject) => {
 			readFile(this.jsonFilePath, (err, result) => {
 				if (err) {
@@ -49,6 +51,6 @@ export class FsJsonStorage implements IAsynchronousCacheType {
 			});
 		});
 
-		return JSON.parse(fileContent.toString());
+		return JSON.parse(fileContent.toString()) as CacheObject;
 	}
 }

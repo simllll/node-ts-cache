@@ -3,9 +3,9 @@ import type { IMultiSynchronousCacheType, ISynchronousCacheType } from '@hokify/
 import LRU from 'lru-cache';
 
 export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCacheType {
-	myCache: LRU<string, any>;
+	myCache: LRU<string, unknown>;
 
-	constructor(/** maxAge in seconds! */ private options: LRU.Options<string, any>) {
+	constructor(/** maxAge in seconds! */ private options: LRU.Options<string, unknown>) {
 		this.myCache = new LRU({
 			...options,
 			maxAge: options.maxAge ? options.maxAge * 1000 : undefined
@@ -13,20 +13,22 @@ export class LRUStorage implements ISynchronousCacheType, IMultiSynchronousCache
 	}
 
 	getItems<T>(keys: string[]): { [key: string]: T | undefined } {
-		return Object.fromEntries(keys.map(key => [key, this.myCache.get(key)]));
+		return Object.fromEntries(keys.map(key => [key, this.myCache.get(key)])) as {
+			[key: string]: T | undefined;
+		};
 	}
 
-	setItems(values: { key: string; content: any }[]): void {
+	setItems(values: { key: string; content: unknown }[]): void {
 		values.forEach(val => {
 			this.myCache.set(val.key, val.content);
 		});
 	}
 
 	public getItem<T>(key: string): T | undefined {
-		return this.myCache.get(key) || undefined;
+		return this.myCache.get(key) as T | undefined;
 	}
 
-	public setItem(key: string, content: any): void {
+	public setItem(key: string, content: unknown): void {
 		this.myCache.set(key, content);
 	}
 
