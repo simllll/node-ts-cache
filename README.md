@@ -42,14 +42,14 @@ This is a monorepo containing the following packages:
 
 ### Core Package
 
-| Package                             | Version                                                        | Description                                                            |
-| ----------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Package                           | Version                                                      | Description                                                            |
+| --------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------- |
 | [@node-ts-cache/core](./ts-cache) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/core.svg) | Core caching module with decorators, strategies, and built-in storages |
 
 ### Storage Adapters
 
-| Package                                                           | Version                                                                           | Description                                            |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Package                                                    | Version                                                                    | Description                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
 | [@node-ts-cache/redis-storage](./storages/redis)           | ![npm](https://img.shields.io/npm/v/@node-ts-cache/redis-storage.svg)      | Redis storage using `redis` package (v3.x)             |
 | [@node-ts-cache/ioredis-storage](./storages/redisio)       | ![npm](https://img.shields.io/npm/v/@node-ts-cache/ioredis-storage.svg)    | Redis storage using `ioredis` with compression support |
 | [@node-ts-cache/node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/node-cache-storage.svg) | In-memory cache using `node-cache`                     |

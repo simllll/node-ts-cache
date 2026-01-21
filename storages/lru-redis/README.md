@@ -114,16 +114,16 @@ new LRUWithRedisStorage(
 )
 ```
 
-| Parameter | Type                         | Description                              |
-| --------- | ---------------------------- | ---------------------------------------- |
-| `options` | `LRUWithRedisStorageOptions` | Options for local LRU cache and TTL      |
+| Parameter | Type                         | Description                               |
+| --------- | ---------------------------- | ----------------------------------------- |
+| `options` | `LRUWithRedisStorageOptions` | Options for local LRU cache and TTL       |
 | `redis`   | `() => Redis.Redis`          | Factory function returning ioredis client |
 
 ### Options
 
-| Option | Type     | Default | Description                                      |
-| ------ | -------- | ------- | ------------------------------------------------ |
-| `max`  | `number` | `500`   | Maximum items in local LRU cache                 |
+| Option | Type     | Default | Description                                        |
+| ------ | -------- | ------- | -------------------------------------------------- |
+| `max`  | `number` | `500`   | Maximum items in local LRU cache                   |
 | `ttl`  | `number` | `86400` | Time to live in **seconds** (for both LRU & Redis) |
 
 ## Interface
