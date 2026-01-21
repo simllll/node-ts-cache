@@ -23,16 +23,16 @@ npm install @hokify/node-ts-cache
 ```
 
 ```typescript
-import { Cache, ExpirationStrategy, MemoryStorage } from "@hokify/node-ts-cache";
+import { Cache, ExpirationStrategy, MemoryStorage } from '@hokify/node-ts-cache';
 
 const cacheStrategy = new ExpirationStrategy(new MemoryStorage());
 
 class UserService {
-  @Cache(cacheStrategy, { ttl: 300 })
-  async getUser(id: string): Promise<User> {
-    // This result will be cached for 5 minutes
-    return await fetchUserFromDatabase(id);
-  }
+	@Cache(cacheStrategy, { ttl: 300 })
+	async getUser(id: string): Promise<User> {
+		// This result will be cached for 5 minutes
+		return await fetchUserFromDatabase(id);
+	}
 }
 ```
 
@@ -42,19 +42,19 @@ This is a monorepo containing the following packages:
 
 ### Core Package
 
-| Package | Version | Description |
-|---------|---------|-------------|
+| Package                             | Version                                                        | Description                                                            |
+| ----------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | [@hokify/node-ts-cache](./ts-cache) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache.svg) | Core caching module with decorators, strategies, and built-in storages |
 
 ### Storage Adapters
 
-| Package | Version | Description |
-|---------|---------|-------------|
-| [@hokify/node-ts-cache-redis-storage](./storages/redis) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redis-storage.svg) | Redis storage using `redis` package (v3.x) |
-| [@hokify/node-ts-cache-redisio-storage](./storages/redisio) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redisio-storage.svg) | Redis storage using `ioredis` with compression support |
-| [@hokify/node-ts-cache-node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-node-cache-storage.svg) | In-memory cache using `node-cache` |
-| [@hokify/node-ts-cache-lru-storage](./storages/lru) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-storage.svg) | LRU cache with automatic eviction |
-| [@hokify/node-ts-cache-lru-redis-storage](./storages/lru-redis) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-redis-storage.svg) | Two-tier caching (local LRU + remote Redis) |
+| Package                                                           | Version                                                                           | Description                                            |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [@hokify/node-ts-cache-redis-storage](./storages/redis)           | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redis-storage.svg)      | Redis storage using `redis` package (v3.x)             |
+| [@hokify/node-ts-cache-redisio-storage](./storages/redisio)       | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-redisio-storage.svg)    | Redis storage using `ioredis` with compression support |
+| [@hokify/node-ts-cache-node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-node-cache-storage.svg) | In-memory cache using `node-cache`                     |
+| [@hokify/node-ts-cache-lru-storage](./storages/lru)               | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-storage.svg)        | LRU cache with automatic eviction                      |
+| [@hokify/node-ts-cache-lru-redis-storage](./storages/lru-redis)   | ![npm](https://img.shields.io/npm/v/@hokify/node-ts-cache-lru-redis-storage.svg)  | Two-tier caching (local LRU + remote Redis)            |
 
 ## Documentation
 
@@ -90,15 +90,15 @@ For detailed documentation, see the [main package README](./ts-cache/README.md).
 
 ## Choosing a Storage
 
-| Storage | Type | Use Case | Features |
-|---------|------|----------|----------|
-| **MemoryStorage** | Sync | Development, small datasets | Zero config, bundled |
-| **FsJsonStorage** | Async | Persistent local cache | File-based, survives restarts |
-| **NodeCacheStorage** | Sync | Production single-instance | TTL support, multi-ops |
-| **LRUStorage** | Sync | Memory-constrained apps | Auto-eviction, size limits |
-| **RedisStorage** | Async | Distributed systems | Shared cache, legacy redis |
-| **RedisIOStorage** | Async | Distributed systems | Compression, modern ioredis |
-| **LRUWithRedisStorage** | Async | High-performance distributed | Local + remote tiers |
+| Storage                 | Type  | Use Case                     | Features                      |
+| ----------------------- | ----- | ---------------------------- | ----------------------------- |
+| **MemoryStorage**       | Sync  | Development, small datasets  | Zero config, bundled          |
+| **FsJsonStorage**       | Async | Persistent local cache       | File-based, survives restarts |
+| **NodeCacheStorage**    | Sync  | Production single-instance   | TTL support, multi-ops        |
+| **LRUStorage**          | Sync  | Memory-constrained apps      | Auto-eviction, size limits    |
+| **RedisStorage**        | Async | Distributed systems          | Shared cache, legacy redis    |
+| **RedisIOStorage**      | Async | Distributed systems          | Compression, modern ioredis   |
+| **LRUWithRedisStorage** | Async | High-performance distributed | Local + remote tiers          |
 
 ## Requirements
 

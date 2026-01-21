@@ -3,19 +3,19 @@ const del = require('del');
 const glob = require('glob');
 const childProcess = require('child_process');
 
-task('cleanModules', function() {
+task('cleanModules', function () {
 	return del(['./ts-cache/node_modules', './storages/*/node_modules']);
 });
 
-task('cleanTmp', function() {
+task('cleanTmp', function () {
 	return del(['./ts-cache/.tmp', './storages/*/.tmp']);
 });
 
-task('cleanDist', function() {
+task('cleanDist', function () {
 	return del(['./ts-cache/dist', './storages/*/dist']);
 });
 
-task('updatePackages', function(cb) {
+task('updatePackages', function (cb) {
 	const check = pkgJsonPath => {
 		try {
 			return childProcess.execSync(`npx ncu --packageFile ${pkgJsonPath} -u`).toString();

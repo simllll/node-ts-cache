@@ -24,27 +24,27 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-redisio-storage ioredis
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import RedisIOStorage from "@hokify/node-ts-cache-redisio-storage";
-import Redis from "ioredis";
+import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import RedisIOStorage from '@hokify/node-ts-cache-redisio-storage';
+import Redis from 'ioredis';
 
 const redisClient = new Redis({
-  host: "localhost",
-  port: 6379
+	host: 'localhost',
+	port: 6379
 });
 
 const storage = new RedisIOStorage(
-  () => redisClient,
-  { maxAge: 3600 }  // TTL in seconds (default: 86400 = 24 hours)
+	() => redisClient,
+	{ maxAge: 3600 } // TTL in seconds (default: 86400 = 24 hours)
 );
 
 const strategy = new ExpirationStrategy(storage);
 
 class UserService {
-  @Cache(strategy, { ttl: 300 })
-  async getUser(id: string): Promise<User> {
-    return await db.users.findById(id);
-  }
+	@Cache(strategy, { ttl: 300 })
+	async getUser(id: string): Promise<User> {
+		return await db.users.findById(id);
+	}
 }
 ```
 
@@ -53,10 +53,7 @@ class UserService {
 Enable Snappy compression to reduce bandwidth usage (useful for large objects):
 
 ```typescript
-const storage = new RedisIOStorage(
-  () => redisClient,
-  { maxAge: 3600, compress: true }
-);
+const storage = new RedisIOStorage(() => redisClient, { maxAge: 3600, compress: true });
 ```
 
 ### With Error Handler
@@ -64,15 +61,12 @@ const storage = new RedisIOStorage(
 Configure a custom error handler for non-blocking write operations:
 
 ```typescript
-const storage = new RedisIOStorage(
-  () => redisClient,
-  { maxAge: 3600 }
-);
+const storage = new RedisIOStorage(() => redisClient, { maxAge: 3600 });
 
-storage.onError((error) => {
-  // Log errors without blocking the application
-  console.error("Redis cache error:", error);
-  metrics.incrementCacheError();
+storage.onError(error => {
+	// Log errors without blocking the application
+	console.error('Redis cache error:', error);
+	metrics.incrementCacheError();
 });
 ```
 
@@ -83,18 +77,18 @@ When an error handler is set, write operations don't await the Redis response, m
 This storage supports batch operations, making it ideal for multi-tier caching:
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import RedisIOStorage from "@hokify/node-ts-cache-redisio-storage";
-import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+import { MultiCache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import RedisIOStorage from '@hokify/node-ts-cache-redisio-storage';
+import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
 
 const localCache = new ExpirationStrategy(new NodeCacheStorage());
 const redisCache = new RedisIOStorage(() => redisClient, { maxAge: 3600 });
 
 class UserService {
-  @MultiCache([localCache, redisCache], 0, (id) => `user:${id}`)
-  async getUsersByIds(ids: string[]): Promise<User[]> {
-    return await db.users.findByIds(ids);
-  }
+	@MultiCache([localCache, redisCache], 0, id => `user:${id}`)
+	async getUsersByIds(ids: string[]): Promise<User[]> {
+		return await db.users.findByIds(ids);
+	}
 }
 ```
 
@@ -104,15 +98,18 @@ class UserService {
 const storage = new RedisIOStorage(() => redisClient, { maxAge: 3600 });
 
 // Single item operations
-await storage.setItem("user:123", { name: "John" }, { ttl: 60 });
-const user = await storage.getItem<{ name: string }>("user:123");
+await storage.setItem('user:123', { name: 'John' }, { ttl: 60 });
+const user = await storage.getItem<{ name: string }>('user:123');
 
 // Multi-item operations
-const users = await storage.getItems<User>(["user:1", "user:2", "user:3"]);
-await storage.setItems([
-  { key: "user:1", content: { name: "Alice" } },
-  { key: "user:2", content: { name: "Bob" } }
-], { ttl: 60 });
+const users = await storage.getItems<User>(['user:1', 'user:2', 'user:3']);
+await storage.setItems(
+	[
+		{ key: 'user:1', content: { name: 'Alice' } },
+		{ key: 'user:2', content: { name: 'Bob' } }
+	],
+	{ ttl: 60 }
+);
 
 // Clear all (uses FLUSHDB - use with caution!)
 await storage.clear();
@@ -130,25 +127,25 @@ new RedisIOStorage(
 )
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `redis` | `() => Redis.Redis` | Factory function returning an ioredis client instance |
-| `options.maxAge` | `number` | Default TTL in seconds (default: 86400 = 24 hours) |
-| `options.compress` | `boolean` | Enable Snappy compression (default: false) |
+| Parameter          | Type                | Description                                           |
+| ------------------ | ------------------- | ----------------------------------------------------- |
+| `redis`            | `() => Redis.Redis` | Factory function returning an ioredis client instance |
+| `options.maxAge`   | `number`            | Default TTL in seconds (default: 86400 = 24 hours)    |
+| `options.compress` | `boolean`           | Enable Snappy compression (default: false)            |
 
 ## Interface
 
 ```typescript
 interface IAsynchronousCacheType {
-  getItem<T>(key: string): Promise<T | undefined>;
-  setItem(key: string, content: any, options?: { ttl?: number }): Promise<void>;
-  clear(): Promise<void>;
+	getItem<T>(key: string): Promise<T | undefined>;
+	setItem(key: string, content: any, options?: { ttl?: number }): Promise<void>;
+	clear(): Promise<void>;
 }
 
 interface IMultiIAsynchronousCacheType {
-  getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
-  setItems(values: { key: string; content: any }[], options?: { ttl?: number }): Promise<void>;
-  clear(): Promise<void>;
+	getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
+	setItems(values: { key: string; content: any }[], options?: { ttl?: number }): Promise<void>;
+	clear(): Promise<void>;
 }
 ```
 

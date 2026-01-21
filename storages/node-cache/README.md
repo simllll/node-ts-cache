@@ -24,17 +24,17 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-node-cache-storage
 ### Basic Usage
 
 ```typescript
-import { SyncCache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+import { SyncCache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
 
 class ConfigService {
-  @SyncCache(strategy, { ttl: 60 })
-  getConfig(key: string): Config {
-    return loadConfigFromFile(key);
-  }
+	@SyncCache(strategy, { ttl: 60 })
+	getConfig(key: string): Config {
+		return loadConfigFromFile(key);
+	}
 }
 ```
 
@@ -42,10 +42,10 @@ class ConfigService {
 
 ```typescript
 const storage = new NodeCacheStorage({
-  stdTTL: 100,        // Default TTL in seconds
-  checkperiod: 120,   // Cleanup check interval in seconds
-  maxKeys: 1000,      // Maximum number of keys (-1 = unlimited)
-  useClones: true     // Clone objects on get/set (data isolation)
+	stdTTL: 100, // Default TTL in seconds
+	checkperiod: 120, // Cleanup check interval in seconds
+	maxKeys: 1000, // Maximum number of keys (-1 = unlimited)
+	useClones: true // Clone objects on get/set (data isolation)
 });
 ```
 
@@ -54,34 +54,34 @@ const storage = new NodeCacheStorage({
 Works with `@Cache` decorator as well (operations are still synchronous internally):
 
 ```typescript
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
 
 class UserService {
-  @Cache(strategy, { ttl: 300 })
-  async getUser(id: string): Promise<User> {
-    return await db.users.findById(id);
-  }
+	@Cache(strategy, { ttl: 300 })
+	async getUser(id: string): Promise<User> {
+		return await db.users.findById(id);
+	}
 }
 ```
 
 ### Multi-Operations with @MultiCache
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import NodeCacheStorage from "@hokify/node-ts-cache-node-cache-storage";
+import { MultiCache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import NodeCacheStorage from '@hokify/node-ts-cache-node-cache-storage';
 
 const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
 
 class ProductService {
-  @MultiCache([strategy], 0, (id) => `product:${id}`)
-  async getProductsByIds(ids: string[]): Promise<Product[]> {
-    return await db.products.findByIds(ids);
-  }
+	@MultiCache([strategy], 0, id => `product:${id}`)
+	async getProductsByIds(ids: string[]): Promise<Product[]> {
+		return await db.products.findByIds(ids);
+	}
 }
 ```
 
@@ -92,8 +92,8 @@ const storage = new NodeCacheStorage();
 const strategy = new ExpirationStrategy(storage);
 
 // Single operations
-strategy.setItem("key", { data: "value" }, { ttl: 60 });
-const value = strategy.getItem<{ data: string }>("key");
+strategy.setItem('key', { data: 'value' }, { ttl: 60 });
+const value = strategy.getItem<{ data: string }>('key');
 
 // Clear all
 strategy.clear();
@@ -103,38 +103,40 @@ strategy.clear();
 
 Accepts all [node-cache options](https://www.npmjs.com/package/node-cache#options):
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `stdTTL` | `number` | `0` | Default TTL in seconds (0 = unlimited) |
-| `checkperiod` | `number` | `600` | Automatic delete check interval in seconds |
-| `maxKeys` | `number` | `-1` | Maximum number of keys (-1 = unlimited) |
-| `useClones` | `boolean` | `true` | Clone objects on get/set |
-| `deleteOnExpire` | `boolean` | `true` | Delete expired keys automatically |
+| Option           | Type      | Default | Description                                |
+| ---------------- | --------- | ------- | ------------------------------------------ |
+| `stdTTL`         | `number`  | `0`     | Default TTL in seconds (0 = unlimited)     |
+| `checkperiod`    | `number`  | `600`   | Automatic delete check interval in seconds |
+| `maxKeys`        | `number`  | `-1`    | Maximum number of keys (-1 = unlimited)    |
+| `useClones`      | `boolean` | `true`  | Clone objects on get/set                   |
+| `deleteOnExpire` | `boolean` | `true`  | Delete expired keys automatically          |
 
 ## Interface
 
 ```typescript
 interface ISynchronousCacheType {
-  getItem<T>(key: string): T | undefined;
-  setItem(key: string, content: any, options?: any): void;
-  clear(): void;
+	getItem<T>(key: string): T | undefined;
+	setItem(key: string, content: any, options?: any): void;
+	clear(): void;
 }
 
 interface IMultiSynchronousCacheType {
-  getItems<T>(keys: string[]): { [key: string]: T | undefined };
-  setItems(values: { key: string; content: any }[], options?: any): void;
-  clear(): void;
+	getItems<T>(keys: string[]): { [key: string]: T | undefined };
+	setItems(values: { key: string; content: any }[], options?: any): void;
+	clear(): void;
 }
 ```
 
 ## TTL Behavior
 
 When using with `ExpirationStrategy`:
+
 - `node-cache`'s `stdTTL` sets the storage-level TTL
 - `ExpirationStrategy`'s `ttl` option sets the strategy-level TTL
 - Both apply - the shorter one determines actual expiration
 
 For best results, either:
+
 - Set `stdTTL: 0` and let ExpirationStrategy handle TTL
 - Or set `isCachedForever: true` in strategy options and let node-cache handle TTL
 

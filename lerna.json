@@ -1,8 +1,5 @@
 {
-	"packages": [
-		"storages/*",
-		"ts-cache"
-	],
+	"packages": ["storages/*", "ts-cache"],
 	"version": "independent",
 	"command": {
 		"publish": {
@@ -13,8 +10,5 @@
 	"forceLocal": true,
 	"conventionalCommits": true,
 	"reject-cycles": true,
-	"ignoreChanges": [
-		"**/test/**",
-		"**/*.md"
-	]
+	"ignoreChanges": ["**/test/**", "**/*.md"]
 }

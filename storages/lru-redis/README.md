@@ -50,27 +50,27 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-lru-redis-storage ioredi
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import LRUWithRedisStorage from "@hokify/node-ts-cache-lru-redis-storage";
-import Redis from "ioredis";
+import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import LRUWithRedisStorage from '@hokify/node-ts-cache-lru-redis-storage';
+import Redis from 'ioredis';
 
 const redisClient = new Redis({
-  host: "localhost",
-  port: 6379
+	host: 'localhost',
+	port: 6379
 });
 
 const storage = new LRUWithRedisStorage(
-  { max: 1000 },        // LRU options: max 1000 items locally
-  () => redisClient     // Redis client factory
+	{ max: 1000 }, // LRU options: max 1000 items locally
+	() => redisClient // Redis client factory
 );
 
 const strategy = new ExpirationStrategy(storage);
 
 class UserService {
-  @Cache(strategy, { ttl: 300 })
-  async getUser(id: string): Promise<User> {
-    return await db.users.findById(id);
-  }
+	@Cache(strategy, { ttl: 300 })
+	async getUser(id: string): Promise<User> {
+		return await db.users.findById(id);
+	}
 }
 ```
 
@@ -78,11 +78,11 @@ class UserService {
 
 ```typescript
 const storage = new LRUWithRedisStorage(
-  {
-    max: 500,
-    maxAge: 1000 * 60  // Local cache TTL: 1 minute (milliseconds)
-  },
-  () => redisClient
+	{
+		max: 500,
+		maxAge: 1000 * 60 // Local cache TTL: 1 minute (milliseconds)
+	},
+	() => redisClient
 );
 ```
 
@@ -93,13 +93,13 @@ const storage = new LRUWithRedisStorage({ max: 100 }, () => redisClient);
 const strategy = new ExpirationStrategy(storage);
 
 // Store (writes to both LRU and Redis)
-await strategy.setItem("user:123", { name: "John" }, { ttl: 60 });
+await strategy.setItem('user:123', { name: 'John' }, { ttl: 60 });
 
 // First get - might hit Redis if not in LRU
-const user1 = await strategy.getItem<User>("user:123");
+const user1 = await strategy.getItem<User>('user:123');
 
 // Second get - hits local LRU (fast!)
-const user2 = await strategy.getItem<User>("user:123");
+const user2 = await strategy.getItem<User>('user:123');
 
 // Clear both caches
 await strategy.clear();
@@ -114,27 +114,27 @@ new LRUWithRedisStorage(
 )
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `lruOptions` | `LRU.Options` | Options for local LRU cache (see [lru-cache](https://www.npmjs.com/package/lru-cache#options)) |
-| `redis` | `() => Redis.Redis` | Factory function returning an ioredis client |
+| Parameter    | Type                | Description                                                                                    |
+| ------------ | ------------------- | ---------------------------------------------------------------------------------------------- |
+| `lruOptions` | `LRU.Options`       | Options for local LRU cache (see [lru-cache](https://www.npmjs.com/package/lru-cache#options)) |
+| `redis`      | `() => Redis.Redis` | Factory function returning an ioredis client                                                   |
 
 ### LRU Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `max` | `number` | Required | Maximum items in local cache |
-| `maxAge` | `number` | - | Local TTL in **milliseconds** |
-| `maxSize` | `number` | - | Maximum total size |
-| `sizeCalculation` | `function` | - | Size calculator function |
+| Option            | Type       | Default  | Description                   |
+| ----------------- | ---------- | -------- | ----------------------------- |
+| `max`             | `number`   | Required | Maximum items in local cache  |
+| `maxAge`          | `number`   | -        | Local TTL in **milliseconds** |
+| `maxSize`         | `number`   | -        | Maximum total size            |
+| `sizeCalculation` | `function` | -        | Size calculator function      |
 
 ## Interface
 
 ```typescript
 interface IAsynchronousCacheType {
-  getItem<T>(key: string): Promise<T | undefined>;
-  setItem(key: string, content: any, options?: any): Promise<void>;
-  clear(): Promise<void>;
+	getItem<T>(key: string): Promise<T | undefined>;
+	setItem(key: string, content: any, options?: any): Promise<void>;
+	clear(): Promise<void>;
 }
 ```
 
@@ -144,13 +144,13 @@ interface IAsynchronousCacheType {
 
 ```typescript
 class ProductAPI {
-  @Cache(strategy, { ttl: 60 })
-  async getProduct(id: string): Promise<Product> {
-    // Hot products served from local LRU (~0.01ms)
-    // Cold products fetched from Redis (~1-5ms)
-    // Very cold products hit database
-    return await db.products.findById(id);
-  }
+	@Cache(strategy, { ttl: 60 })
+	async getProduct(id: string): Promise<Product> {
+		// Hot products served from local LRU (~0.01ms)
+		// Cold products fetched from Redis (~1-5ms)
+		// Very cold products hit database
+		return await db.products.findById(id);
+	}
 }
 ```
 
@@ -178,12 +178,12 @@ Multiple application instances share the same Redis cache while maintaining thei
 
 ```typescript
 class SessionService {
-  @Cache(strategy, { ttl: 1800 })  // 30 minutes
-  async getSession(token: string): Promise<Session> {
-    // Active sessions stay in local LRU
-    // Inactive sessions fall back to Redis
-    return await db.sessions.findByToken(token);
-  }
+	@Cache(strategy, { ttl: 1800 }) // 30 minutes
+	async getSession(token: string): Promise<Session> {
+		// Active sessions stay in local LRU
+		// Inactive sessions fall back to Redis
+		return await db.sessions.findByToken(token);
+	}
 }
 ```
 

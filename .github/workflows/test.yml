@@ -62,4 +62,3 @@ jobs:
 
       - name: Check Prettier formatting
         run: npm run format
-        continue-on-error: true  # Existing code has formatting issues

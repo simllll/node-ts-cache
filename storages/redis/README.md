@@ -17,21 +17,21 @@ npm install @hokify/node-ts-cache @hokify/node-ts-cache-redis-storage
 ### Basic Usage
 
 ```typescript
-import { Cache, ExpirationStrategy } from "@hokify/node-ts-cache";
-import RedisStorage from "@hokify/node-ts-cache-redis-storage";
+import { Cache, ExpirationStrategy } from '@hokify/node-ts-cache';
+import RedisStorage from '@hokify/node-ts-cache-redis-storage';
 
 const storage = new RedisStorage({
-  host: "localhost",
-  port: 6379
+	host: 'localhost',
+	port: 6379
 });
 
 const strategy = new ExpirationStrategy(storage);
 
 class UserService {
-  @Cache(strategy, { ttl: 300 })
-  async getUser(id: string): Promise<User> {
-    return await db.users.findById(id);
-  }
+	@Cache(strategy, { ttl: 300 })
+	async getUser(id: string): Promise<User> {
+		return await db.users.findById(id);
+	}
 }
 ```
 
@@ -39,24 +39,24 @@ class UserService {
 
 ```typescript
 const storage = new RedisStorage({
-  host: "redis.example.com",
-  port: 6379,
-  password: "your-password",
-  db: 0
+	host: 'redis.example.com',
+	port: 6379,
+	password: 'your-password',
+	db: 0
 });
 ```
 
 ### Direct API Usage
 
 ```typescript
-const storage = new RedisStorage({ host: "localhost", port: 6379 });
+const storage = new RedisStorage({ host: 'localhost', port: 6379 });
 const strategy = new ExpirationStrategy(storage);
 
 // Store a value
-await strategy.setItem("user:123", { name: "John" }, { ttl: 60 });
+await strategy.setItem('user:123', { name: 'John' }, { ttl: 60 });
 
 // Retrieve a value
-const user = await strategy.getItem<{ name: string }>("user:123");
+const user = await strategy.getItem<{ name: string }>('user:123');
 
 // Clear all cached items
 await strategy.clear();
@@ -66,21 +66,21 @@ await strategy.clear();
 
 The constructor accepts [RedisClientOptions](https://github.com/redis/node-redis/tree/v3.1.2#options-object-properties) from the `redis` package:
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `host` | `string` | `"127.0.0.1"` | Redis server hostname |
-| `port` | `number` | `6379` | Redis server port |
-| `password` | `string` | - | Redis authentication password |
-| `db` | `number` | `0` | Redis database number |
-| `url` | `string` | - | Redis URL (overrides host/port) |
+| Option     | Type     | Default       | Description                     |
+| ---------- | -------- | ------------- | ------------------------------- |
+| `host`     | `string` | `"127.0.0.1"` | Redis server hostname           |
+| `port`     | `number` | `6379`        | Redis server port               |
+| `password` | `string` | -             | Redis authentication password   |
+| `db`       | `number` | `0`           | Redis database number           |
+| `url`      | `string` | -             | Redis URL (overrides host/port) |
 
 ## Interface
 
 ```typescript
 interface IAsynchronousCacheType {
-  getItem<T>(key: string): Promise<T | undefined>;
-  setItem(key: string, content: any, options?: any): Promise<void>;
-  clear(): Promise<void>;
+	getItem<T>(key: string): Promise<T | undefined>;
+	setItem(key: string, content: any, options?: any): Promise<void>;
+	clear(): Promise<void>;
 }
 ```
 
