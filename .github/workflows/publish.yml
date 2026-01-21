@@ -1,10 +1,6 @@
-name: Publish to npm
+name: Release and Publish
 
 on:
-  # Trigger on release creation
-  release:
-    types: [published]
-  # Allow manual trigger
   workflow_dispatch:
     inputs:
       version_type:
@@ -18,19 +14,19 @@ on:
           - major
           - prerelease
       prerelease_id:
-        description: 'Prerelease identifier (e.g., alpha, beta, rc)'
+        description: 'Prerelease identifier (e.g., alpha, beta, rc) - only used with prerelease'
         required: false
         default: ''
         type: string
       dry_run:
-        description: 'Dry run (no actual publish)'
+        description: 'Dry run (no actual publish, just preview)'
         required: false
         default: false
         type: boolean
 
 jobs:
-  publish:
-    name: Publish packages
+  release:
+    name: Release and Publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -66,102 +62,156 @@ jobs:
         env:
           CI: true
 
-      # Version and publish for manual workflow dispatch
-      - name: Version and Publish (Manual)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          if [ "${{ inputs.dry_run }}" == "true" ]; then
-            echo "Dry run mode - showing what would be published"
-            npx lerna changed || echo "No packages changed"
-          else
-            PREID_ARG=""
-            if [ -n "${{ inputs.prerelease_id }}" ]; then
-              PREID_ARG="--preid ${{ inputs.prerelease_id }}"
-            fi
-
-            # Version packages
-            npx lerna version ${{ inputs.version_type }} \
-              --yes \
-              --conventional-commits \
-              --create-release github \
-              $PREID_ARG
-
-            # Publish to npm
-            npx lerna publish from-git --yes
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Publish for release events (already versioned via release)
-      - name: Publish (Release)
-        if: github.event_name == 'release'
-        run: |
-          npx lerna publish from-git --yes
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # Separate job for conventional commits based auto-versioning
-  auto-version:
-    name: Auto-version (Conventional Commits)
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    permissions:
-      contents: write
-      id-token: write
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Run tests
-        run: npm run test
-        env:
-          CI: true
-
-      - name: Check for changed packages
-        id: changed
+      - name: Check for changes
+        id: check
         run: |
           CHANGED=$(npx lerna changed --json 2>/dev/null || echo "[]")
           if [ "$CHANGED" == "[]" ]; then
             echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No packages have changed since last release"
           else
             echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Changed packages:"
+            echo "$CHANGED" | jq -r '.[].name'
           fi
 
-      - name: Version and Publish
-        if: steps.changed.outputs.changed == 'true'
+      - name: Dry Run - Preview Changes
+        if: inputs.dry_run == true
         run: |
-          # Version using conventional commits
-          npx lerna version \
+          echo "=== DRY RUN MODE ==="
+          echo ""
+          echo "Version type: ${{ inputs.version_type }}"
+          if [ -n "${{ inputs.prerelease_id }}" ]; then
+            echo "Prerelease ID: ${{ inputs.prerelease_id }}"
+          fi
+          echo ""
+          echo "=== Changed packages ==="
+          npx lerna changed -l || echo "No packages changed"
+          echo ""
+          echo "=== What would be published ==="
+          npx lerna version ${{ inputs.version_type }} --no-git-tag-version --no-push --yes 2>/dev/null || true
+          git diff --name-only
+          git checkout -- .
+
+      - name: Version packages
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        id: version
+        run: |
+          PREID_ARG=""
+          if [ -n "${{ inputs.prerelease_id }}" ]; then
+            PREID_ARG="--preid ${{ inputs.prerelease_id }}"
+          fi
+
+          # Version packages with conventional commits
+          npx lerna version ${{ inputs.version_type }} \
             --yes \
             --conventional-commits \
-            --create-release github \
-            --message "chore(release): publish"
+            --changelog-preset angular \
+            --message "chore(release): publish %s" \
+            $PREID_ARG
 
-          # Publish to npm
+          # Get the new version for release notes
+          NEW_VERSION=$(node -p "require('./lerna.json').version || 'independent'")
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Get list of published packages for release notes
+          PACKAGES=$(npx lerna ls --json | jq -r '.[].name' | tr '\n' ', ' | sed 's/,$//')
+          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Release Notes
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        id: release_notes
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # Generate changelog from commits
+          if [ -n "$LATEST_TAG" ]; then
+            PREV_TAG=$(git describe --tags --abbrev=0 ${LATEST_TAG}^ 2>/dev/null || echo "")
+            if [ -n "$PREV_TAG" ]; then
+              COMMITS=$(git log ${PREV_TAG}..${LATEST_TAG} --pretty=format:"- %s (%h)" --no-merges)
+            else
+              COMMITS=$(git log ${LATEST_TAG} --pretty=format:"- %s (%h)" --no-merges -20)
+            fi
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -20)
+          fi
+
+          # Create release notes file
+          cat > release_notes.md << 'NOTES_EOF'
+          ## What's Changed
+
+          NOTES_EOF
+
+          # Add package versions
+          echo "### Published Packages" >> release_notes.md
+          echo "" >> release_notes.md
+          npx lerna ls -l --json | jq -r '.[] | "- \(.name)@\(.version)"' >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Add commits
+          echo "### Commits" >> release_notes.md
+          echo "" >> release_notes.md
+          if [ -n "$COMMITS" ]; then
+            echo "$COMMITS" >> release_notes.md
+          else
+            echo "- Initial release" >> release_notes.md
+          fi
+          echo "" >> release_notes.md
+
+          # Add install instructions
+          echo "### Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo 'npm install @hokify/node-ts-cache' >> release_notes.md
+          echo '```' >> release_notes.md
+
+          cat release_notes.md
+
+      - name: Publish to npm
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
           npx lerna publish from-git --yes
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
+          # Get the latest tag created by lerna
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+
+          # Determine if this is a prerelease
+          PRERELEASE_FLAG=""
+          if [ -n "${{ inputs.prerelease_id }}" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          # Create the GitHub release
+          gh release create "$LATEST_TAG" \
+            --title "Release $LATEST_TAG" \
+            --notes-file release_notes.md \
+            $PRERELEASE_FLAG
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        if: inputs.dry_run == false && steps.check.outputs.changed == 'true'
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Successfully released the following packages:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          npx lerna ls -l --json | jq -r '.[] | "- **\(.name)** @ \(.version)"' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "GitHub Release: https://github.com/${{ github.repository }}/releases/tag/$LATEST_TAG" >> $GITHUB_STEP_SUMMARY
+
+      - name: No changes to release
+        if: steps.check.outputs.changed == 'false'
+        run: |
+          echo "## No Changes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "No packages have changed since the last release. Nothing to publish." >> $GITHUB_STEP_SUMMARY
