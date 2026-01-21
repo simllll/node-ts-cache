@@ -37,7 +37,10 @@ describe('JSONStringifyKeyStrategy', () => {
 	it('Should generate correct key for nested object args', () => {
 		const args = [{ user: { name: 'john', address: { city: 'NYC' } } }];
 		const key = strategy.getKey('UserService', 'processUser', args);
-		Assert.strictEqual(key, 'UserService:processUser:[{"user":{"name":"john","address":{"city":"NYC"}}}]');
+		Assert.strictEqual(
+			key,
+			'UserService:processUser:[{"user":{"name":"john","address":{"city":"NYC"}}}]'
+		);
 	});
 
 	it('Should generate correct key for null args', () => {
