@@ -359,7 +359,7 @@ import LRUStorage from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({
 	max: 500, // Maximum number of items
-	maxAge: 1000 * 60 // Max age in milliseconds (note: different from strategy TTL)
+	ttl: 300 // TTL in seconds
 });
 const strategy = new ExpirationStrategy(storage);
 ```
@@ -371,7 +371,7 @@ const strategy = new ExpirationStrategy(storage);
 - Memory-safe with bounded size
 - Supports multi-get/set operations
 
-**Note:** LRU cache has its own TTL (`maxAge` in milliseconds). When using with `ExpirationStrategy`, both TTLs apply. Set `maxAge` higher than your strategy TTL or use `isCachedForever` in the strategy.
+**Note:** LRU cache has its own TTL (`ttl` in seconds). When using with `ExpirationStrategy`, both TTLs apply. Set LRU `ttl` higher than your strategy TTL or use `isCachedForever` in the strategy.
 
 #### RedisStorage
 

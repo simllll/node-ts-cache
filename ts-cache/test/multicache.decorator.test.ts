@@ -2,7 +2,7 @@
 import { MultiCache, IMultiCacheKeyStrategy } from '../src/decorator/multicache.decorator.js';
 import { LRUStorage } from '../../storages/lru/src/LRUStorage.js';
 
-const canonicalLRUStrategy = new LRUStorage({});
+const canonicalLRUStrategy = new LRUStorage({ max: 500 });
 
 // @ts-ignore
 import RedisMock from 'ioredis-mock';
