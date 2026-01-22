@@ -1,41 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { RedisStorage } from '../src/redis.storage.js';
 
-// Use CI Redis service if available, otherwise use redis-memory-server
-const useServiceRedis = process.env.REDIS_HOST && process.env.REDIS_PORT;
+// Requires Redis - use REDIS_HOST/REDIS_PORT env vars or defaults to localhost:6379
+// In CI: provided by Redis service container
+// Locally: docker run -p 6379:6379 redis:7
+const host = process.env.REDIS_HOST || 'localhost';
+const port = Number(process.env.REDIS_PORT) || 6379;
 
-let redisServer: { stop: () => Promise<void> } | null = null;
 let storage: RedisStorage;
 
 describe('RedisStorage', () => {
 	beforeAll(async () => {
-		if (useServiceRedis) {
-			// Use CI Redis service
-			storage = new RedisStorage({
-				socket: {
-					host: process.env.REDIS_HOST,
-					port: Number(process.env.REDIS_PORT)
-				}
-			});
-		} else {
-			// Use redis-memory-server for local development
-			const { RedisMemoryServer } = await import('redis-memory-server');
-			const server = new RedisMemoryServer();
-			const host = await server.getHost();
-			const port = await server.getPort();
-			redisServer = server;
-			storage = new RedisStorage({
-				socket: {
-					host,
-					port
-				}
-			});
-		}
-	}, 30000);
+		storage = new RedisStorage({
+			socket: { host, port }
+		});
+	}, 10000);
 
 	afterAll(async () => {
 		if (storage) await storage.disconnect();
-		if (redisServer) await redisServer.stop();
 	}, 10000);
 
 	it('Should clear Redis without errors', async () => {

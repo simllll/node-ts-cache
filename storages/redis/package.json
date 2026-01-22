@@ -51,9 +51,6 @@
 		"@node-ts-cache/core": "workspace:*",
 		"redis": "^4.7.0"
 	},
-	"devDependencies": {
-		"redis-memory-server": "^0.11.0"
-	},
 	"engines": {
 		"node": ">=18.0.0"
 	},
