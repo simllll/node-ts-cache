@@ -176,6 +176,15 @@ async findUser(id: string): Promise<User | null> {
 |----------|-------------|
 | `DISABLE_CACHE_DECORATOR` | Set to any value to disable all `@Cache` decorators |
 
+## More Documentation
+
+See [ADVANCED.md](./ADVANCED.md) for:
+
+- Interface definitions for implementing custom storages
+- Detailed storage configuration examples
+- @MultiCache in-depth usage
+- Error handling patterns
+
 ## License
 
 MIT License
