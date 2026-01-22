@@ -1,6 +1,6 @@
 {
 	"name": "@node-ts-cache/valkey-storage",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Valkey storage adapter for node-ts-cache",
 	"type": "module",
 	"exports": {
