@@ -31,15 +31,17 @@ class UserService {
 
 The core package includes `MemoryStorage` and `FsJsonStorage`. Additional storage backends are available as separate packages:
 
-| Package                             | Storage Type                                           | Sync/Async | Use Case                               |
-| ----------------------------------- | ------------------------------------------------------ | ---------- | -------------------------------------- |
-| `@node-ts-cache/core`               | MemoryStorage                                          | Sync       | Development, simple caching            |
-| `@node-ts-cache/core`               | FsJsonStorage                                          | Async      | Persistent local cache                 |
-| `@node-ts-cache/node-cache-storage` | [node-cache](https://www.npmjs.com/package/node-cache) | Sync       | Production single-instance with TTL    |
-| `@node-ts-cache/lru-storage`        | [lru-cache](https://www.npmjs.com/package/lru-cache)   | Sync       | Memory-bounded with automatic eviction |
-| `@node-ts-cache/redis-storage`      | [redis](https://www.npmjs.com/package/redis) (v4.x)    | Async      | Shared cache                           |
-| `@node-ts-cache/ioredis-storage`    | [ioredis](https://www.npmjs.com/package/ioredis)       | Async      | Shared cache with compression          |
-| `@node-ts-cache/lru-redis-storage`  | LRU + Redis                                            | Async      | Two-tier: fast local + shared remote   |
+| Package                                | Storage Type                                                          | Sync/Async | Use Case                               |
+| -------------------------------------- | --------------------------------------------------------------------- | ---------- | -------------------------------------- |
+| `@node-ts-cache/core`                  | MemoryStorage                                                         | Sync       | Development, simple caching            |
+| `@node-ts-cache/core`                  | FsJsonStorage                                                         | Async      | Persistent local cache                 |
+| `@node-ts-cache/node-cache-storage`    | [node-cache](https://www.npmjs.com/package/node-cache)                | Sync       | Production single-instance with TTL    |
+| `@node-ts-cache/lru-storage`           | [lru-cache](https://www.npmjs.com/package/lru-cache)                  | Sync       | Memory-bounded with automatic eviction |
+| `@node-ts-cache/redis-storage`         | [redis](https://www.npmjs.com/package/redis) (v4.x)                   | Async      | Shared cache                           |
+| `@node-ts-cache/ioredis-storage`       | [ioredis](https://www.npmjs.com/package/ioredis)                      | Async      | Shared cache with compression          |
+| `@node-ts-cache/lru-redis-storage`     | LRU + Redis                                                           | Async      | Two-tier: fast local + shared remote   |
+| `@node-ts-cache/elasticsearch-storage` | [elasticsearch](https://www.npmjs.com/package/@elastic/elasticsearch) | Async      | Search-integrated caching              |
+| `@node-ts-cache/memcached-storage`     | [memcached](https://www.npmjs.com/package/memcached)                  | Async      | High-performance distributed cache     |
 
 ## Decorators
 

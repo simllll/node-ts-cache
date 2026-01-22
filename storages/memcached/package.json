@@ -1,0 +1,51 @@
+{
+	"name": "@node-ts-cache/memcached-storage",
+	"version": "1.0.0",
+	"description": "Memcached storage adapter for node-ts-cache",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p .",
+		"clean": "git clean -fdx src",
+		"dev": "tsc -p . -w",
+		"prepublishOnly": "tsc -p .",
+		"test": "vitest run"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/simllll/node-ts-cache.git"
+	},
+	"keywords": [
+		"typescript",
+		"cache",
+		"memcached",
+		"storage"
+	],
+	"author": "simllll",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/simllll/node-ts-cache/issues"
+	},
+	"homepage": "https://github.com/simllll/node-ts-cache#readme",
+	"dependencies": {
+		"@node-ts-cache/core": "workspace:*",
+		"memcached": "^2.2.2"
+	},
+	"devDependencies": {
+		"@types/memcached": "^2.2.10"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}
