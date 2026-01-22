@@ -1,22 +1,37 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { RedisMemoryServer } from 'redis-memory-server';
 import { RedisStorage } from '../src/redis.storage.js';
 
-let redisServer: RedisMemoryServer;
+// Use CI Redis service if available, otherwise use redis-memory-server
+const useServiceRedis = process.env.REDIS_HOST && process.env.REDIS_PORT;
+
+let redisServer: { stop: () => Promise<void> } | null = null;
 let storage: RedisStorage;
 
 describe('RedisStorage', () => {
 	beforeAll(async () => {
-		redisServer = new RedisMemoryServer();
-		const host = await redisServer.getHost();
-		const port = await redisServer.getPort();
-		storage = new RedisStorage({
-			socket: {
-				host,
-				port
-			}
-		});
-	}, 30000); // redis-memory-server may need time to download/start
+		if (useServiceRedis) {
+			// Use CI Redis service
+			storage = new RedisStorage({
+				socket: {
+					host: process.env.REDIS_HOST,
+					port: Number(process.env.REDIS_PORT)
+				}
+			});
+		} else {
+			// Use redis-memory-server for local development
+			const { RedisMemoryServer } = await import('redis-memory-server');
+			const server = new RedisMemoryServer();
+			const host = await server.getHost();
+			const port = await server.getPort();
+			redisServer = server;
+			storage = new RedisStorage({
+				socket: {
+					host,
+					port
+				}
+			});
+		}
+	}, 30000);
 
 	afterAll(async () => {
 		if (storage) await storage.disconnect();
@@ -56,7 +71,7 @@ describe('RedisStorage', () => {
 	it('Should handle numeric values', async () => {
 		await storage.setItem('numKey', 42);
 		const result = await storage.getItem<number>('numKey');
-		expect(result).toBe(42); // Numbers are parsed back from string
+		expect(result).toBe(42);
 	});
 
 	it('Should clear all items', async () => {
