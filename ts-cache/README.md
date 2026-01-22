@@ -15,15 +15,15 @@ npm install @node-ts-cache/core
 ## Quick Start
 
 ```typescript
-import { Cache, ExpirationStrategy, MemoryStorage } from "@node-ts-cache/core";
+import { Cache, ExpirationStrategy, MemoryStorage } from '@node-ts-cache/core';
 
 const cacheStrategy = new ExpirationStrategy(new MemoryStorage());
 
 class UserService {
-  @Cache(cacheStrategy, { ttl: 60 })
-  async getUser(id: string): Promise<User> {
-    return await database.findUser(id);
-  }
+	@Cache(cacheStrategy, { ttl: 60 })
+	async getUser(id: string): Promise<User> {
+		return await database.findUser(id);
+	}
 }
 ```
 
@@ -31,15 +31,15 @@ class UserService {
 
 The core package includes `MemoryStorage` and `FsJsonStorage`. Additional storage backends are available as separate packages:
 
-| Package | Storage Type | Sync/Async | Use Case |
-|---------|-------------|------------|----------|
-| `@node-ts-cache/core` | MemoryStorage | Sync | Development, simple caching |
-| `@node-ts-cache/core` | FsJsonStorage | Async | Persistent local cache |
-| `@node-ts-cache/node-cache-storage` | [node-cache](https://www.npmjs.com/package/node-cache) | Sync | Production single-instance with TTL |
-| `@node-ts-cache/lru-storage` | [lru-cache](https://www.npmjs.com/package/lru-cache) | Sync | Memory-bounded with automatic eviction |
-| `@node-ts-cache/redis-storage` | [redis](https://www.npmjs.com/package/redis) (v4.x) | Async | Shared cache |
-| `@node-ts-cache/ioredis-storage` | [ioredis](https://www.npmjs.com/package/ioredis) | Async | Shared cache with compression |
-| `@node-ts-cache/lru-redis-storage` | LRU + Redis | Async | Two-tier: fast local + shared remote |
+| Package                             | Storage Type                                           | Sync/Async | Use Case                               |
+| ----------------------------------- | ------------------------------------------------------ | ---------- | -------------------------------------- |
+| `@node-ts-cache/core`               | MemoryStorage                                          | Sync       | Development, simple caching            |
+| `@node-ts-cache/core`               | FsJsonStorage                                          | Async      | Persistent local cache                 |
+| `@node-ts-cache/node-cache-storage` | [node-cache](https://www.npmjs.com/package/node-cache) | Sync       | Production single-instance with TTL    |
+| `@node-ts-cache/lru-storage`        | [lru-cache](https://www.npmjs.com/package/lru-cache)   | Sync       | Memory-bounded with automatic eviction |
+| `@node-ts-cache/redis-storage`      | [redis](https://www.npmjs.com/package/redis) (v4.x)    | Async      | Shared cache                           |
+| `@node-ts-cache/ioredis-storage`    | [ioredis](https://www.npmjs.com/package/ioredis)       | Async      | Shared cache with compression          |
+| `@node-ts-cache/lru-redis-storage`  | LRU + Redis                                            | Async      | Two-tier: fast local + shared remote   |
 
 ## Decorators
 
@@ -49,10 +49,10 @@ Caches async method results. Cache key is generated from class name, method name
 
 ```typescript
 class ProductService {
-  @Cache(strategy, { ttl: 300 })
-  async getProduct(id: string): Promise<Product> {
-    return await db.products.findById(id);
-  }
+	@Cache(strategy, { ttl: 300 })
+	async getProduct(id: string): Promise<Product> {
+		return await db.products.findById(id);
+	}
 }
 ```
 
@@ -64,10 +64,10 @@ Caches synchronous method results without converting to Promises. Use with synch
 
 ```typescript
 class ConfigService {
-  @SyncCache(strategy, { ttl: 60 })
-  getConfig(key: string): ConfigValue {
-    return computeConfig(key);
-  }
+	@SyncCache(strategy, { ttl: 60 })
+	getConfig(key: string): ConfigValue {
+		return computeConfig(key);
+	}
 }
 ```
 
@@ -77,10 +77,10 @@ Multi-tier caching with batch operations for array-based lookups.
 
 ```typescript
 class UserService {
-  @MultiCache([localCache, redisCache], 0, (id) => `user:${id}`, { ttl: 300 })
-  async getUsersByIds(userIds: string[]): Promise<User[]> {
-    return await db.users.findByIds(userIds);
-  }
+	@MultiCache([localCache, redisCache], 0, id => `user:${id}`, { ttl: 300 })
+	async getUsersByIds(userIds: string[]): Promise<User[]> {
+		return await db.users.findByIds(userIds);
+	}
 }
 ```
 
@@ -92,13 +92,13 @@ Use the caching strategy directly without decorators:
 const cache = new ExpirationStrategy(new MemoryStorage());
 
 // Get item
-const value = await cache.getItem<Data>("key");
+const value = await cache.getItem<Data>('key');
 
 // Set item with TTL
-await cache.setItem("key", data, { ttl: 300 });
+await cache.setItem('key', data, { ttl: 300 });
 
 // Delete item
-await cache.setItem("key", undefined);
+await cache.setItem('key', undefined);
 
 // Clear all
 await cache.clear();
@@ -106,21 +106,21 @@ await cache.clear();
 
 ## ExpirationStrategy Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `ttl` | `number` | `60` | Time to live in seconds |
-| `isLazy` | `boolean` | `true` | If `true`, delete on access after expiration. If `false`, delete via `setTimeout` |
-| `isCachedForever` | `boolean` | `false` | If `true`, items never expire |
+| Option            | Type      | Default | Description                                                                       |
+| ----------------- | --------- | ------- | --------------------------------------------------------------------------------- |
+| `ttl`             | `number`  | `60`    | Time to live in seconds                                                           |
+| `isLazy`          | `boolean` | `true`  | If `true`, delete on access after expiration. If `false`, delete via `setTimeout` |
+| `isCachedForever` | `boolean` | `false` | If `true`, items never expire                                                     |
 
 ```typescript
 // Cache for 5 minutes with lazy expiration
-await strategy.setItem("key", value, { ttl: 300, isLazy: true });
+await strategy.setItem('key', value, { ttl: 300, isLazy: true });
 
 // Cache forever
-await strategy.setItem("key", value, { isCachedForever: true });
+await strategy.setItem('key', value, { isCachedForever: true });
 
 // Cache with eager expiration (auto-delete after TTL)
-await strategy.setItem("key", value, { ttl: 10, isLazy: false });
+await strategy.setItem('key', value, { ttl: 10, isLazy: false });
 ```
 
 ## Custom Key Strategies
@@ -129,17 +129,17 @@ Override default key generation by implementing `ISyncKeyStrategy` or `IAsyncKey
 
 ```typescript
 class CustomKeyStrategy implements ISyncKeyStrategy {
-  getKey(className: string, methodName: string, args: any[]): string | undefined {
-    if (args[0] === "skip") return undefined; // Skip caching
-    return `${className}::${methodName}::${args.join("-")}`;
-  }
+	getKey(className: string, methodName: string, args: any[]): string | undefined {
+		if (args[0] === 'skip') return undefined; // Skip caching
+		return `${className}::${methodName}::${args.join('-')}`;
+	}
 }
 
 class MyService {
-  @Cache(strategy, { ttl: 60 }, new CustomKeyStrategy())
-  async getData(id: string): Promise<Data> {
-    return fetchData(id);
-  }
+	@Cache(strategy, { ttl: 60 }, new CustomKeyStrategy())
+	async getData(id: string): Promise<Data> {
+		return fetchData(id);
+	}
 }
 ```
 
@@ -152,9 +152,9 @@ Concurrent calls with the same cache key share the same pending promise:
 ```typescript
 // All three calls share one database request
 const [a, b, c] = await Promise.all([
-  service.fetchData("123"),
-  service.fetchData("123"),
-  service.fetchData("123"),
+	service.fetchData('123'),
+	service.fetchData('123'),
+	service.fetchData('123')
 ]);
 ```
 
@@ -172,8 +172,8 @@ async findUser(id: string): Promise<User | null> {
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable                  | Description                                         |
+| ------------------------- | --------------------------------------------------- |
 | `DISABLE_CACHE_DECORATOR` | Set to any value to disable all `@Cache` decorators |
 
 ## More Documentation

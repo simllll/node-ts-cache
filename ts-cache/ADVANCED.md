@@ -13,64 +13,64 @@ Implement these interfaces to create custom storage backends.
  * Cache entry structure stored in backends
  */
 interface ICacheEntry {
-  content: any; // The cached value
-  meta: any; // Metadata (e.g., TTL, createdAt)
+	content: any; // The cached value
+	meta: any; // Metadata (e.g., TTL, createdAt)
 }
 
 /**
  * Asynchronous storage for single items
  */
 interface IAsynchronousCacheType<C = ICacheEntry> {
-  /** Retrieve an item by key. Returns undefined if not found. */
-  getItem<T>(key: string): Promise<T | undefined>;
+	/** Retrieve an item by key. Returns undefined if not found. */
+	getItem<T>(key: string): Promise<T | undefined>;
 
-  /** Store an item. Pass undefined as content to delete. */
-  setItem(key: string, content: C | undefined, options?: any): Promise<void>;
+	/** Store an item. Pass undefined as content to delete. */
+	setItem(key: string, content: C | undefined, options?: any): Promise<void>;
 
-  /** Clear all items from the cache. */
-  clear(): Promise<void>;
+	/** Clear all items from the cache. */
+	clear(): Promise<void>;
 }
 
 /**
  * Synchronous storage for single items
  */
 interface ISynchronousCacheType<C = ICacheEntry> {
-  /** Retrieve an item by key. Returns undefined if not found. */
-  getItem<T>(key: string): T | undefined;
+	/** Retrieve an item by key. Returns undefined if not found. */
+	getItem<T>(key: string): T | undefined;
 
-  /** Store an item. Pass undefined as content to delete. */
-  setItem(key: string, content: C | undefined, options?: any): void;
+	/** Store an item. Pass undefined as content to delete. */
+	setItem(key: string, content: C | undefined, options?: any): void;
 
-  /** Clear all items from the cache. */
-  clear(): void;
+	/** Clear all items from the cache. */
+	clear(): void;
 }
 
 /**
  * Asynchronous storage with batch operations (for @MultiCache)
  */
 interface IMultiIAsynchronousCacheType<C = ICacheEntry> {
-  /** Retrieve multiple items by keys. */
-  getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
+	/** Retrieve multiple items by keys. */
+	getItems<T>(keys: string[]): Promise<{ [key: string]: T | undefined }>;
 
-  /** Store multiple items at once. */
-  setItems(values: { key: string; content: C | undefined }[], options?: any): Promise<void>;
+	/** Store multiple items at once. */
+	setItems(values: { key: string; content: C | undefined }[], options?: any): Promise<void>;
 
-  /** Clear all items from the cache. */
-  clear(): Promise<void>;
+	/** Clear all items from the cache. */
+	clear(): Promise<void>;
 }
 
 /**
  * Synchronous storage with batch operations (for @MultiCache)
  */
 interface IMultiSynchronousCacheType<C = ICacheEntry> {
-  /** Retrieve multiple items by keys. */
-  getItems<T>(keys: string[]): { [key: string]: T | undefined };
+	/** Retrieve multiple items by keys. */
+	getItems<T>(keys: string[]): { [key: string]: T | undefined };
 
-  /** Store multiple items at once. */
-  setItems(values: { key: string; content: C | undefined }[], options?: any): void;
+	/** Store multiple items at once. */
+	setItems(values: { key: string; content: C | undefined }[], options?: any): void;
 
-  /** Clear all items from the cache. */
-  clear(): void;
+	/** Clear all items from the cache. */
+	clear(): void;
 }
 ```
 
@@ -81,18 +81,18 @@ interface IMultiSynchronousCacheType<C = ICacheEntry> {
  * Synchronous key generation strategy
  */
 interface ISyncKeyStrategy {
-  getKey(className: string, methodName: string, args: any[]): string | undefined;
+	getKey(className: string, methodName: string, args: any[]): string | undefined;
 }
 
 /**
  * Asynchronous key generation strategy
  */
 interface IAsyncKeyStrategy {
-  getKey(
-    className: string,
-    methodName: string,
-    args: any[]
-  ): Promise<string | undefined> | string | undefined;
+	getKey(
+		className: string,
+		methodName: string,
+		args: any[]
+	): Promise<string | undefined> | string | undefined;
 }
 ```
 
@@ -103,7 +103,7 @@ interface IAsyncKeyStrategy {
 Simple in-memory storage using a JavaScript object.
 
 ```typescript
-import { MemoryStorage, ExpirationStrategy } from "@node-ts-cache/core";
+import { MemoryStorage, ExpirationStrategy } from '@node-ts-cache/core';
 
 const storage = new MemoryStorage();
 const strategy = new ExpirationStrategy(storage);
@@ -121,9 +121,9 @@ const strategy = new ExpirationStrategy(storage);
 File-based storage that persists cache to a JSON file.
 
 ```typescript
-import { FsJsonStorage, ExpirationStrategy } from "@node-ts-cache/core";
+import { FsJsonStorage, ExpirationStrategy } from '@node-ts-cache/core';
 
-const storage = new FsJsonStorage("/tmp/cache.json");
+const storage = new FsJsonStorage('/tmp/cache.json');
 const strategy = new ExpirationStrategy(storage);
 ```
 
@@ -143,13 +143,13 @@ npm install @node-ts-cache/node-cache-storage
 ```
 
 ```typescript
-import { ExpirationStrategy } from "@node-ts-cache/core";
-import NodeCacheStorage from "@node-ts-cache/node-cache-storage";
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
 
 const storage = new NodeCacheStorage({
-  stdTTL: 100, // Default TTL in seconds
-  checkperiod: 120, // Cleanup interval in seconds
-  maxKeys: 1000, // Maximum number of keys
+	stdTTL: 100, // Default TTL in seconds
+	checkperiod: 120, // Cleanup interval in seconds
+	maxKeys: 1000 // Maximum number of keys
 });
 const strategy = new ExpirationStrategy(storage);
 ```
@@ -170,12 +170,12 @@ npm install @node-ts-cache/lru-storage
 ```
 
 ```typescript
-import { ExpirationStrategy } from "@node-ts-cache/core";
-import LRUStorage from "@node-ts-cache/lru-storage";
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import LRUStorage from '@node-ts-cache/lru-storage';
 
 const storage = new LRUStorage({
-  max: 500, // Maximum number of items
-  ttl: 300, // TTL in seconds
+	max: 500, // Maximum number of items
+	ttl: 300 // TTL in seconds
 });
 const strategy = new ExpirationStrategy(storage);
 ```
@@ -198,13 +198,13 @@ npm install @node-ts-cache/redis-storage
 ```
 
 ```typescript
-import { ExpirationStrategy } from "@node-ts-cache/core";
-import RedisStorage from "@node-ts-cache/redis-storage";
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import RedisStorage from '@node-ts-cache/redis-storage';
 
 const storage = new RedisStorage({
-  host: "localhost",
-  port: 6379,
-  password: "optional",
+	host: 'localhost',
+	port: 6379,
+	password: 'optional'
 });
 const strategy = new ExpirationStrategy(storage);
 ```
@@ -224,30 +224,30 @@ npm install @node-ts-cache/ioredis-storage
 ```
 
 ```typescript
-import { ExpirationStrategy } from "@node-ts-cache/core";
-import RedisIOStorage from "@node-ts-cache/ioredis-storage";
-import Redis from "ioredis";
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import RedisIOStorage from '@node-ts-cache/ioredis-storage';
+import Redis from 'ioredis';
 
 const redisClient = new Redis({
-  host: "localhost",
-  port: 6379,
+	host: 'localhost',
+	port: 6379
 });
 
 // Basic usage
 const storage = new RedisIOStorage(
-  () => redisClient,
-  { maxAge: 3600 } // TTL in seconds
+	() => redisClient,
+	{ maxAge: 3600 } // TTL in seconds
 );
 
 // With compression (reduces bandwidth, increases CPU usage)
 const compressedStorage = new RedisIOStorage(() => redisClient, {
-  maxAge: 3600,
-  compress: true,
+	maxAge: 3600,
+	compress: true
 });
 
 // With error handler (non-blocking writes)
-storage.onError((error) => {
-  console.error("Redis error:", error);
+storage.onError(error => {
+	console.error('Redis error:', error);
 });
 
 const strategy = new ExpirationStrategy(storage);
@@ -255,10 +255,10 @@ const strategy = new ExpirationStrategy(storage);
 
 **Constructor Options:**
 
-| Option     | Type      | Default | Description                       |
-| ---------- | --------- | ------- | --------------------------------- |
-| `maxAge`   | `number`  | `86400` | TTL in seconds (used by Redis)    |
-| `compress` | `boolean` | `false` | Enable Snappy compression         |
+| Option     | Type      | Default | Description                    |
+| ---------- | --------- | ------- | ------------------------------ |
+| `maxAge`   | `number`  | `86400` | TTL in seconds (used by Redis) |
+| `compress` | `boolean` | `false` | Enable Snappy compression      |
 
 **Characteristics:**
 
@@ -277,15 +277,15 @@ npm install @node-ts-cache/lru-redis-storage
 ```
 
 ```typescript
-import { ExpirationStrategy } from "@node-ts-cache/core";
-import LRUWithRedisStorage from "@node-ts-cache/lru-redis-storage";
-import Redis from "ioredis";
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import LRUWithRedisStorage from '@node-ts-cache/lru-redis-storage';
+import Redis from 'ioredis';
 
 const redisClient = new Redis();
 
 const storage = new LRUWithRedisStorage(
-  { max: 1000 }, // LRU options
-  () => redisClient // Redis client factory
+	{ max: 1000 }, // LRU options
+	() => redisClient // Redis client factory
 );
 const strategy = new ExpirationStrategy(storage);
 ```
@@ -321,31 +321,31 @@ const strategy = new ExpirationStrategy(storage);
 ### Example
 
 ```typescript
-import { MultiCache, ExpirationStrategy } from "@node-ts-cache/core";
-import NodeCacheStorage from "@node-ts-cache/node-cache-storage";
-import RedisIOStorage from "@node-ts-cache/ioredis-storage";
+import { MultiCache, ExpirationStrategy } from '@node-ts-cache/core';
+import NodeCacheStorage from '@node-ts-cache/node-cache-storage';
+import RedisIOStorage from '@node-ts-cache/ioredis-storage';
 
 // Local cache (fastest) -> Redis (shared) -> Database (slowest)
 const localCache = new ExpirationStrategy(new NodeCacheStorage());
 const redisCache = new RedisIOStorage(() => redisClient, { maxAge: 3600 });
 
 class UserService {
-  @MultiCache([localCache, redisCache], 0, (userId) => `user:${userId}`, { ttl: 300 })
-  async getUsersByIds(userIds: string[]): Promise<User[]> {
-    // This only runs for IDs not found in any cache
-    // IMPORTANT: Return results in the same order as input IDs
-    return await db.users.findByIds(userIds);
-  }
+	@MultiCache([localCache, redisCache], 0, userId => `user:${userId}`, { ttl: 300 })
+	async getUsersByIds(userIds: string[]): Promise<User[]> {
+		// This only runs for IDs not found in any cache
+		// IMPORTANT: Return results in the same order as input IDs
+		return await db.users.findByIds(userIds);
+	}
 }
 
 // Usage
 const service = new UserService();
 
 // First call - checks local, then redis, then hits database
-const users = await service.getUsersByIds(["1", "2", "3"]);
+const users = await service.getUsersByIds(['1', '2', '3']);
 
 // Second call - user 1 & 2 from local cache, user 4 from database
-const moreUsers = await service.getUsersByIds(["1", "2", "4"]);
+const moreUsers = await service.getUsersByIds(['1', '2', '4']);
 ```
 
 ### Return Value Requirements
@@ -369,9 +369,9 @@ Cache errors are logged but don't break the application flow. If caching fails, 
 // "@node-ts-cache/core: writing result to cache failed [key] [error]"
 
 // For RedisIOStorage, you can add a custom error handler:
-storage.onError((error) => {
-  metrics.incrementCacheError();
-  logger.error("Cache error", error);
+storage.onError(error => {
+	metrics.incrementCacheError();
+	logger.error('Cache error', error);
 });
 ```
 
@@ -380,13 +380,13 @@ storage.onError((error) => {
 For key generation that requires async operations (e.g., fetching user context):
 
 ```typescript
-import { Cache, ExpirationStrategy, MemoryStorage, IAsyncKeyStrategy } from "@node-ts-cache/core";
+import { Cache, ExpirationStrategy, MemoryStorage, IAsyncKeyStrategy } from '@node-ts-cache/core';
 
 class AsyncKeyStrategy implements IAsyncKeyStrategy {
-  async getKey(className: string, methodName: string, args: any[]): Promise<string | undefined> {
-    const userId = await getCurrentUserId();
-    return `${userId}:${className}:${methodName}:${JSON.stringify(args)}`;
-  }
+	async getKey(className: string, methodName: string, args: any[]): Promise<string | undefined> {
+		const userId = await getCurrentUserId();
+		return `${userId}:${className}:${methodName}:${JSON.stringify(args)}`;
+	}
 }
 ```
 
@@ -394,23 +394,23 @@ class AsyncKeyStrategy implements IAsyncKeyStrategy {
 
 ```typescript
 // Decorators
-export { Cache } from "./decorator/cache.decorator";
-export { SyncCache } from "./decorator/synccache.decorator";
-export { MultiCache } from "./decorator/multicache.decorator";
+export { Cache } from './decorator/cache.decorator';
+export { SyncCache } from './decorator/synccache.decorator';
+export { MultiCache } from './decorator/multicache.decorator';
 
 // Strategies
-export { ExpirationStrategy } from "./strategy/caching/expiration.strategy";
+export { ExpirationStrategy } from './strategy/caching/expiration.strategy';
 
 // Built-in Storages
-export { MemoryStorage } from "./storage/memory";
-export { FsJsonStorage } from "./storage/fs";
+export { MemoryStorage } from './storage/memory';
+export { FsJsonStorage } from './storage/fs';
 
 // Interfaces
 export {
-  IAsynchronousCacheType,
-  ISynchronousCacheType,
-  IMultiIAsynchronousCacheType,
-  IMultiSynchronousCacheType,
-} from "./types/cache.types";
-export { ISyncKeyStrategy, IAsyncKeyStrategy } from "./types/key.strategy.types";
+	IAsynchronousCacheType,
+	ISynchronousCacheType,
+	IMultiIAsynchronousCacheType,
+	IMultiSynchronousCacheType
+} from './types/cache.types';
+export { ISyncKeyStrategy, IAsyncKeyStrategy } from './types/key.strategy.types';
 ```
