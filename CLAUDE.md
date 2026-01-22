@@ -61,7 +61,7 @@ Always run these checks before committing:
 │   └── test/              # Test files
 ├── storages/              # Storage adapter packages
 │   ├── lru/               # LRU cache storage
-│   ├── redis/             # Redis storage (redis package v3.x)
+│   ├── redis/             # Redis storage (redis package v4.x)
 │   ├── redisio/           # Redis storage (ioredis with compression)
 │   ├── node-cache/        # node-cache storage
 │   └── lru-redis/         # Two-tier LRU + Redis storage
@@ -69,6 +69,6 @@ Always run these checks before committing:
 
 ## Testing Framework
 
-- Uses Mocha with ts-node ESM loader
+- Uses Vitest
 - Tests use Node's built-in `assert` module
 - Mock Redis instances using `redis-mock` and `ioredis-mock`
