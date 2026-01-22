@@ -1,6 +1,6 @@
 {
 	"name": "@node-ts-cache/lru-redis-storage",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Simple and extensible caching module supporting decorators",
 	"keywords": [
 		"node",
