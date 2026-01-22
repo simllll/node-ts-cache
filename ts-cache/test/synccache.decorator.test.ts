@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { SyncCache } from '../src/index.js';
 import { MemoryStorage } from '../src/storage/memory/index.js';
 import { ISyncKeyStrategy } from '../src/types/key.strategy.types.js';
@@ -135,8 +135,8 @@ describe('SyncCacheDecorator', () => {
 
 		const users = myClass.getUsers();
 
-		Assert.strictEqual(data, users);
-		Assert.strictEqual(storage.getItem<string[]>('TestClassOne:getUsers:[]'), data);
+		expect(data).toBe(users);
+		expect(storage.getItem<string[]>('TestClassOne:getUsers:[]')).toBe(data);
 	});
 
 	it('Should return cached value on subsequent calls', () => {
@@ -146,7 +146,7 @@ describe('SyncCacheDecorator', () => {
 		myClass.getUsers();
 		myClass.getUsers();
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should cache with different arguments separately', () => {
@@ -156,10 +156,10 @@ describe('SyncCacheDecorator', () => {
 		const users2 = myClass.getUsersWithArgs(2);
 		const users1Again = myClass.getUsersWithArgs(1);
 
-		Assert.deepStrictEqual(users1, [...data, 'id:1']);
-		Assert.deepStrictEqual(users2, [...data, 'id:2']);
-		Assert.strictEqual(users1, users1Again);
-		Assert.strictEqual(myClass.callCount, 2);
+		expect(users1).toEqual([...data, 'id:1']);
+		expect(users2).toEqual([...data, 'id:2']);
+		expect(users1).toBe(users1Again);
+		expect(myClass.callCount).toBe(2);
 	});
 
 	it('Should cache null values', () => {
@@ -169,7 +169,7 @@ describe('SyncCacheDecorator', () => {
 		myClass.getNullValue();
 		myClass.getNullValue();
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should cache false values', () => {
@@ -179,7 +179,7 @@ describe('SyncCacheDecorator', () => {
 		myClass.getFalseValue();
 		myClass.getFalseValue();
 
-		Assert.strictEqual(myClass.callCount, 1);
+		expect(myClass.callCount).toBe(1);
 	});
 
 	it('Should NOT cache undefined values', () => {
@@ -189,15 +189,15 @@ describe('SyncCacheDecorator', () => {
 		myClass.getUndefinedValue();
 		myClass.getUndefinedValue();
 
-		Assert.strictEqual(myClass.callCount, 3);
+		expect(myClass.callCount).toBe(3);
 	});
 
 	it('Should throw error when async function is detected', () => {
 		const myClass = new TestClassWithAsync();
 
-		Assert.throws(() => {
+		expect(() => {
 			myClass.getAsyncUsers();
-		}, /async function detected, use @Cache instead/);
+		}).toThrow(/async function detected, use @Cache instead/);
 	});
 
 	it('Should skip caching when key strategy returns undefined', () => {
@@ -207,7 +207,7 @@ describe('SyncCacheDecorator', () => {
 		myClass.getUsers();
 		myClass.getUsers();
 
-		Assert.strictEqual(myClass.callCount, 3);
+		expect(myClass.callCount).toBe(3);
 	});
 
 	it('Should use custom key strategy', () => {
@@ -215,7 +215,7 @@ describe('SyncCacheDecorator', () => {
 
 		myClass.getUsers();
 
-		Assert.strictEqual(storage.getItem<string[]>('custom:TestClassThree:getUsers:[]'), data);
+		expect(storage.getItem<string[]>('custom:TestClassThree:getUsers:[]')).toBe(data);
 	});
 
 	it('Should handle cache read errors gracefully', () => {
@@ -223,7 +223,7 @@ describe('SyncCacheDecorator', () => {
 
 		// Should not throw, just log warning and continue
 		const result = myClass.getUsers();
-		Assert.deepStrictEqual(result, data);
+		expect(result).toEqual(data);
 	});
 
 	it('Should handle cache write errors gracefully', () => {
@@ -250,6 +250,6 @@ describe('SyncCacheDecorator', () => {
 
 		// Should not throw, just log warning and continue
 		const result = myClass.getUsers();
-		Assert.deepStrictEqual(result, data);
+		expect(result).toEqual(data);
 	});
 });

@@ -1,8 +1,7 @@
-import * as Assert from 'assert';
+import { describe, it, expect } from 'vitest';
 import RedisIOStorage from '../src/index.js';
-//import * as snappy from "snappy";
 
-// @ts-ignore
+// @ts-expect-error - no types for ioredis-mock
 import RedisMock from 'ioredis-mock';
 
 const MockedRedis = new RedisMock({
@@ -12,12 +11,6 @@ const MockedRedis = new RedisMock({
 });
 
 const storage = new RedisIOStorage(() => MockedRedis);
-/*
-const compressedStorage = new RedisIOStorage(() => MockedRedis, {
-  maxAge: 86400,
-  compress: true,
-});
-*/
 
 describe('RedisIOStorage', () => {
 	it('Should clear Redis without errors', async () => {
@@ -28,58 +21,24 @@ describe('RedisIOStorage', () => {
 		it('Should delete cache item if set to undefined', async () => {
 			await storage.setItem('test', undefined);
 
-			Assert.strictEqual(await storage.getItem('test'), undefined);
+			expect(await storage.getItem('test')).toBe(undefined);
 		});
 
 		it('Should return undefined if cache not hit', async () => {
 			await storage.clear();
 			const item = await storage.getItem('item123');
 
-			Assert.strictEqual(item, undefined);
+			expect(item).toBe(undefined);
 		});
 	});
-
-	/*
-  describe("compression", () => {
-    it("Should set and retrieve item correclty", async () => {
-      await compressedStorage.setItem("test", { asdf: 1 });
-
-      Assert.deepEqual(
-        await MockedRedis.get("test"),
-        snappy.compressSync(JSON.stringify({ asdf: 1 }))
-      );
-
-      Assert.deepEqual(await compressedStorage.getItem("test"), { asdf: 1 });
-    });
-
-    it("Mutli Should set and retrieve item correclty", async () => {
-      await compressedStorage.setItems([
-        { key: "test", content: { asdf: 2 } },
-        { key: "test2", content: "2" },
-      ]);
-
-      Assert.deepEqual(
-        await MockedRedis.get("test"),
-        snappy.compressSync(JSON.stringify({ asdf: 2 }))
-      );
-      Assert.deepEqual(
-        await MockedRedis.get("test2"),
-        snappy.compressSync(JSON.stringify("2"))
-      );
-
-      Assert.deepEqual(await compressedStorage.getItem("test"), { asdf: 2 });
-      Assert.deepEqual(await compressedStorage.getItem("test2"), "2");
-    });
-  });
-  */
 
 	describe('uncompressed', () => {
 		it('Should set and retrieve item correclty', async () => {
 			await storage.setItem('test', { asdf: 2 });
 
-			Assert.deepEqual(await MockedRedis.get('test'), JSON.stringify({ asdf: 2 }));
+			expect(await MockedRedis.get('test')).toEqual(JSON.stringify({ asdf: 2 }));
 
-			Assert.deepEqual(await storage.getItem('test'), { asdf: 2 });
+			expect(await storage.getItem('test')).toEqual({ asdf: 2 });
 		});
 
 		it('Mutli Should set and retrieve item correclty', async () => {
@@ -88,11 +47,11 @@ describe('RedisIOStorage', () => {
 				{ key: 'test2', content: '2' }
 			]);
 
-			Assert.deepEqual(await MockedRedis.get('test'), JSON.stringify({ asdf: 2 }));
-			Assert.deepEqual(await MockedRedis.get('test2'), JSON.stringify('2'));
+			expect(await MockedRedis.get('test')).toEqual(JSON.stringify({ asdf: 2 }));
+			expect(await MockedRedis.get('test2')).toEqual(JSON.stringify('2'));
 
-			Assert.deepEqual(await storage.getItem('test'), { asdf: 2 });
-			Assert.deepEqual(await storage.getItem('test2'), '2');
+			expect(await storage.getItem('test')).toEqual({ asdf: 2 });
+			expect(await storage.getItem('test2')).toEqual('2');
 		});
 	});
 });

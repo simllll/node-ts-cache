@@ -31,8 +31,12 @@
 		"Himmet Avsar <avsar.himmet1@gmail.com>"
 	],
 	"type": "module",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
 	"files": [
 		"dist"
 	],
@@ -41,9 +45,7 @@
 		"clean": "git clean -fdx src",
 		"dev": "tsc -p . -w",
 		"prepublishOnly": "tsc -p .",
-		"tdd": "mocha --loader=ts-node/esm -w",
-		"tdd-debug-brk": "mocha --loader=ts-node/esm --inspect-brk",
-		"test": "mocha --loader=ts-node/esm test/**/*.test.ts"
+		"test": "vitest run"
 	},
 	"devDependencies": {
 		"ioredis": "^5.3.2",

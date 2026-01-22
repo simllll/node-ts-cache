@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect } from 'vitest';
 import { ExpirationStrategy } from '../src/index.js';
 import { MemoryStorage } from '../src/storage/memory/index.js';
 
@@ -19,7 +19,7 @@ describe('ExpirationStrategy', () => {
 		await cacher.setItem('test', data, { ttl: 10 });
 		const entry = await cacher.getItem<ITestType>('test');
 
-		Assert.deepStrictEqual(entry, data);
+		expect(entry).toEqual(data);
 	});
 
 	it('Should return no item if cache expires instantly with isLazy', async () => {
@@ -27,7 +27,7 @@ describe('ExpirationStrategy', () => {
 
 		await cacher.setItem('test', data, { ttl: -1 });
 		const entry = await cacher.getItem<ITestType>('test');
-		Assert.deepStrictEqual(entry, undefined);
+		expect(entry).toEqual(undefined);
 	});
 
 	it('Should not find cache item after ttl with isLazy disabled', async () => {
@@ -37,7 +37,7 @@ describe('ExpirationStrategy', () => {
 		await wait(10);
 
 		const entry = await cacher.getItem<ITestType>('test');
-		Assert.deepStrictEqual(entry, undefined);
+		expect(entry).toEqual(undefined);
 	});
 
 	it('Should ignore isLazy and ttl options if isCachedForever option is provided and cache forever', async () => {
@@ -51,7 +51,7 @@ describe('ExpirationStrategy', () => {
 		await wait(10);
 
 		const entry = await cacher.getItem<ITestType>('test');
-		Assert.deepStrictEqual(entry, data);
+		expect(entry).toEqual(data);
 	});
 
 	describe('clear method', () => {
@@ -64,9 +64,9 @@ describe('ExpirationStrategy', () => {
 
 			await cacher.clear();
 
-			Assert.strictEqual(await cacher.getItem('key1'), undefined);
-			Assert.strictEqual(await cacher.getItem('key2'), undefined);
-			Assert.strictEqual(await cacher.getItem('key3'), undefined);
+			expect(await cacher.getItem('key1')).toBe(undefined);
+			expect(await cacher.getItem('key2')).toBe(undefined);
+			expect(await cacher.getItem('key3')).toBe(undefined);
 		});
 
 		it('Should not throw when clearing empty cache', async () => {
@@ -84,7 +84,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', data);
 			const entry = await cacher.getItem<ITestType>('test');
 
-			Assert.deepStrictEqual(entry, data);
+			expect(entry).toEqual(data);
 		});
 
 		it('Should use lazy expiration by default', async () => {
@@ -94,7 +94,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', data, { ttl: -1 });
 			const entry = await cacher.getItem<ITestType>('test');
 
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 	});
 
@@ -103,7 +103,7 @@ describe('ExpirationStrategy', () => {
 			const cacher = new ExpirationStrategy(new MemoryStorage());
 
 			const entry = await cacher.getItem('non-existent');
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 
 		it('Should handle null values', async () => {
@@ -112,7 +112,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', null, { ttl: 1000 });
 			const entry = await cacher.getItem('test');
 
-			Assert.strictEqual(entry, null);
+			expect(entry).toBe(null);
 		});
 
 		it('Should handle boolean false values', async () => {
@@ -121,7 +121,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', false, { ttl: 1000 });
 			const entry = await cacher.getItem<boolean>('test');
 
-			Assert.strictEqual(entry, false);
+			expect(entry).toBe(false);
 		});
 
 		it('Should handle numeric zero values', async () => {
@@ -130,7 +130,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', 0, { ttl: 1000 });
 			const entry = await cacher.getItem<number>('test');
 
-			Assert.strictEqual(entry, 0);
+			expect(entry).toBe(0);
 		});
 
 		it('Should handle empty string values', async () => {
@@ -139,7 +139,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', '', { ttl: 1000 });
 			const entry = await cacher.getItem<string>('test');
 
-			Assert.strictEqual(entry, '');
+			expect(entry).toBe('');
 		});
 
 		it('Should handle array values', async () => {
@@ -149,7 +149,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', arr, { ttl: 1000 });
 			const entry = await cacher.getItem<typeof arr>('test');
 
-			Assert.deepStrictEqual(entry, arr);
+			expect(entry).toEqual(arr);
 		});
 
 		it('Should handle complex nested objects', async () => {
@@ -168,7 +168,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', complex, { ttl: 1000 });
 			const entry = await cacher.getItem<typeof complex>('test');
 
-			Assert.deepStrictEqual(entry, complex);
+			expect(entry).toEqual(complex);
 		});
 	});
 
@@ -180,7 +180,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', { value: 'second' }, { ttl: 1000 });
 
 			const entry = await cacher.getItem<{ value: string }>('test');
-			Assert.deepStrictEqual(entry, { value: 'second' });
+			expect(entry).toEqual({ value: 'second' });
 		});
 
 		it('Should reset TTL when updating', async () => {
@@ -191,7 +191,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', 'second', { ttl: 1000 });
 
 			const entry = await cacher.getItem<string>('test');
-			Assert.strictEqual(entry, 'second');
+			expect(entry).toBe('second');
 		});
 
 		it('Should handle setting undefined value', async () => {
@@ -201,7 +201,7 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('test', undefined, { ttl: 1000 });
 
 			const entry = await cacher.getItem<string>('test');
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 	});
 
@@ -213,7 +213,7 @@ describe('ExpirationStrategy', () => {
 			await wait(10);
 
 			const entry = await cacher.getItem<ITestType>('test');
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 
 		it('Should expire item proactively with eager expiration', async () => {
@@ -223,7 +223,7 @@ describe('ExpirationStrategy', () => {
 			await wait(10);
 
 			const entry = await cacher.getItem<ITestType>('test');
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 
 		it('Should keep items with isLazy until read even after TTL', async () => {
@@ -235,11 +235,11 @@ describe('ExpirationStrategy', () => {
 
 			// Item should still exist in storage (not yet cleaned up)
 			const rawItem = storage.getItem('test');
-			Assert.notStrictEqual(rawItem, undefined);
+			expect(rawItem).not.toBe(undefined);
 
 			// But getItem should return undefined and clean up
 			const entry = await cacher.getItem<ITestType>('test');
-			Assert.strictEqual(entry, undefined);
+			expect(entry).toBe(undefined);
 		});
 	});
 
@@ -251,9 +251,9 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('key2', 'value2', { ttl: 1000 });
 			await cacher.setItem('key3', 'value3', { ttl: 1000 });
 
-			Assert.strictEqual(await cacher.getItem('key1'), 'value1');
-			Assert.strictEqual(await cacher.getItem('key2'), 'value2');
-			Assert.strictEqual(await cacher.getItem('key3'), 'value3');
+			expect(await cacher.getItem('key1')).toBe('value1');
+			expect(await cacher.getItem('key2')).toBe('value2');
+			expect(await cacher.getItem('key3')).toBe('value3');
 		});
 
 		it('Should allow different TTLs for different keys', async () => {
@@ -264,8 +264,8 @@ describe('ExpirationStrategy', () => {
 
 			await wait(10);
 
-			Assert.strictEqual(await cacher.getItem('short'), undefined);
-			Assert.strictEqual(await cacher.getItem('long'), 'value2');
+			expect(await cacher.getItem('short')).toBe(undefined);
+			expect(await cacher.getItem('long')).toBe('value2');
 		});
 	});
 
@@ -274,7 +274,7 @@ describe('ExpirationStrategy', () => {
 			const cacher = new ExpirationStrategy(new MemoryStorage());
 
 			await cacher.setItem('user:123:profile', 'data', { ttl: 1000 });
-			Assert.strictEqual(await cacher.getItem('user:123:profile'), 'data');
+			expect(await cacher.getItem('user:123:profile')).toBe('data');
 		});
 
 		it('Should handle keys with special characters', async () => {
@@ -284,16 +284,16 @@ describe('ExpirationStrategy', () => {
 			await cacher.setItem('key/with/slashes', 'data2', { ttl: 1000 });
 			await cacher.setItem('key-with-dashes', 'data3', { ttl: 1000 });
 
-			Assert.strictEqual(await cacher.getItem('key.with.dots'), 'data1');
-			Assert.strictEqual(await cacher.getItem('key/with/slashes'), 'data2');
-			Assert.strictEqual(await cacher.getItem('key-with-dashes'), 'data3');
+			expect(await cacher.getItem('key.with.dots')).toBe('data1');
+			expect(await cacher.getItem('key/with/slashes')).toBe('data2');
+			expect(await cacher.getItem('key-with-dashes')).toBe('data3');
 		});
 
 		it('Should handle empty string as key', async () => {
 			const cacher = new ExpirationStrategy(new MemoryStorage());
 
 			await cacher.setItem('', 'empty key value', { ttl: 1000 });
-			Assert.strictEqual(await cacher.getItem(''), 'empty key value');
+			expect(await cacher.getItem('')).toBe('empty key value');
 		});
 	});
 });

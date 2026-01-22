@@ -1,7 +1,7 @@
-import * as Assert from 'assert';
+import { describe, it, expect } from 'vitest';
 import LRURedisStorage from '../src/index.js';
 
-// @ts-ignore
+// @ts-expect-error - no types for ioredis-mock
 import RedisMock from 'ioredis-mock';
 
 const MockedRedis = new RedisMock({
@@ -18,7 +18,7 @@ describe('LRUStorage', () => {
 		const key = 'test';
 
 		await storage.setItem(key, content);
-		Assert.strictEqual(await storage.getItem(key), content);
+		expect(await storage.getItem(key)).toBe(content);
 	});
 
 	it('Should clear without errors', async () => {
@@ -28,13 +28,13 @@ describe('LRUStorage', () => {
 	it('Should delete cache item if set to undefined', async () => {
 		await storage.setItem('test', undefined);
 
-		Assert.strictEqual(await storage.getItem('test'), undefined);
+		expect(await storage.getItem('test')).toBe(undefined);
 	});
 
 	it('Should return undefined if cache not hit', async () => {
 		await storage.clear();
 		const item = await storage.getItem('item123');
 
-		Assert.strictEqual(item, undefined);
+		expect(item).toBe(undefined);
 	});
 });

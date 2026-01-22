@@ -1,4 +1,4 @@
-import * as Assert from 'assert';
+import { describe, it, expect, afterEach } from 'vitest';
 import * as Fs from 'fs';
 import { FsJsonStorage } from '../src/storage/fs/index.js';
 
@@ -16,7 +16,7 @@ describe('FsJsonStorage', () => {
 		const storage = new FsJsonStorage(cacheFile);
 		storage.clear();
 
-		Assert.ok(Fs.existsSync(cacheFile));
+		expect(Fs.existsSync(cacheFile)).toBeTruthy();
 	});
 
 	it('Should be empty cache file on storage construction', () => {
@@ -24,7 +24,7 @@ describe('FsJsonStorage', () => {
 		storage.clear();
 
 		const cache = Fs.readFileSync(cacheFile).toString();
-		Assert.strictEqual(cache, '{}');
+		expect(cache).toBe('{}');
 	});
 
 	it('Should add cache item correctly', async () => {
@@ -35,15 +35,15 @@ describe('FsJsonStorage', () => {
 		await storage.setItem(cacheKey, content);
 		const cache = JSON.parse(Fs.readFileSync(cacheFile).toString());
 
-		Assert.deepStrictEqual(cache, { [cacheKey]: content });
+		expect(cache).toEqual({ [cacheKey]: content });
 		const entry = await storage.getItem(cacheKey);
-		Assert.deepEqual(entry, content);
+		expect(entry).toEqual(content);
 	});
 
 	it('Should return undefined for non-existent key', async () => {
 		const storage = new FsJsonStorage(cacheFile);
 		const result = await storage.getItem('non-existent-key');
-		Assert.strictEqual(result, undefined);
+		expect(result).toBe(undefined);
 	});
 
 	it('Should overwrite existing cache item', async () => {
@@ -53,10 +53,10 @@ describe('FsJsonStorage', () => {
 		const content2 = { value: 'second' };
 
 		await storage.setItem(key, content1);
-		Assert.deepStrictEqual(await storage.getItem(key), content1);
+		expect(await storage.getItem(key)).toEqual(content1);
 
 		await storage.setItem(key, content2);
-		Assert.deepStrictEqual(await storage.getItem(key), content2);
+		expect(await storage.getItem(key)).toEqual(content2);
 	});
 
 	it('Should clear all cache items', async () => {
@@ -68,12 +68,12 @@ describe('FsJsonStorage', () => {
 
 		await storage.clear();
 
-		Assert.strictEqual(await storage.getItem('key1'), undefined);
-		Assert.strictEqual(await storage.getItem('key2'), undefined);
-		Assert.strictEqual(await storage.getItem('key3'), undefined);
+		expect(await storage.getItem('key1')).toBe(undefined);
+		expect(await storage.getItem('key2')).toBe(undefined);
+		expect(await storage.getItem('key3')).toBe(undefined);
 
 		const cache = Fs.readFileSync(cacheFile).toString();
-		Assert.strictEqual(cache, '{}');
+		expect(cache).toBe('{}');
 	});
 
 	it('Should handle setting undefined value', async () => {
@@ -81,10 +81,10 @@ describe('FsJsonStorage', () => {
 		const key = 'test';
 
 		await storage.setItem(key, 'initial');
-		Assert.strictEqual(await storage.getItem(key), 'initial');
+		expect(await storage.getItem(key)).toBe('initial');
 
 		await storage.setItem(key, undefined);
-		Assert.strictEqual(await storage.getItem(key), undefined);
+		expect(await storage.getItem(key)).toBe(undefined);
 	});
 
 	it('Should handle null values', async () => {
@@ -92,7 +92,7 @@ describe('FsJsonStorage', () => {
 		const key = 'test';
 
 		await storage.setItem(key, null);
-		Assert.strictEqual(await storage.getItem(key), null);
+		expect(await storage.getItem(key)).toBe(null);
 	});
 
 	it('Should handle boolean values', async () => {
@@ -101,8 +101,8 @@ describe('FsJsonStorage', () => {
 		await storage.setItem('true', true);
 		await storage.setItem('false', false);
 
-		Assert.strictEqual(await storage.getItem('true'), true);
-		Assert.strictEqual(await storage.getItem('false'), false);
+		expect(await storage.getItem('true')).toBe(true);
+		expect(await storage.getItem('false')).toBe(false);
 	});
 
 	it('Should handle numeric values including zero', async () => {
@@ -112,9 +112,9 @@ describe('FsJsonStorage', () => {
 		await storage.setItem('negative', -1);
 		await storage.setItem('float', 3.14);
 
-		Assert.strictEqual(await storage.getItem('zero'), 0);
-		Assert.strictEqual(await storage.getItem('negative'), -1);
-		Assert.strictEqual(await storage.getItem('float'), 3.14);
+		expect(await storage.getItem('zero')).toBe(0);
+		expect(await storage.getItem('negative')).toBe(-1);
+		expect(await storage.getItem('float')).toBe(3.14);
 	});
 
 	it('Should handle array values', async () => {
@@ -122,7 +122,7 @@ describe('FsJsonStorage', () => {
 		const arr = [1, 2, 3, 'test', { nested: true }];
 
 		await storage.setItem('array', arr);
-		Assert.deepStrictEqual(await storage.getItem('array'), arr);
+		expect(await storage.getItem('array')).toEqual(arr);
 	});
 
 	it('Should handle complex nested objects', async () => {
@@ -139,7 +139,7 @@ describe('FsJsonStorage', () => {
 		};
 
 		await storage.setItem('complex', complex);
-		Assert.deepStrictEqual(await storage.getItem('complex'), complex);
+		expect(await storage.getItem('complex')).toEqual(complex);
 	});
 
 	it('Should store multiple keys independently', async () => {
@@ -150,10 +150,10 @@ describe('FsJsonStorage', () => {
 		await storage.setItem('object', { key: 'value' });
 		await storage.setItem('array', [1, 2, 3]);
 
-		Assert.strictEqual(await storage.getItem('string'), 'hello');
-		Assert.strictEqual(await storage.getItem('number'), 42);
-		Assert.deepStrictEqual(await storage.getItem('object'), { key: 'value' });
-		Assert.deepStrictEqual(await storage.getItem('array'), [1, 2, 3]);
+		expect(await storage.getItem('string')).toBe('hello');
+		expect(await storage.getItem('number')).toBe(42);
+		expect(await storage.getItem('object')).toEqual({ key: 'value' });
+		expect(await storage.getItem('array')).toEqual([1, 2, 3]);
 	});
 
 	it('Should persist data to file system', async () => {
@@ -164,7 +164,7 @@ describe('FsJsonStorage', () => {
 		const storage2 = new FsJsonStorage(cacheFile);
 		const result = await storage2.getItem('persist');
 
-		Assert.deepStrictEqual(result, { data: 'persisted' });
+		expect(result).toEqual({ data: 'persisted' });
 	});
 
 	it('Should handle keys with special characters', async () => {
@@ -173,15 +173,15 @@ describe('FsJsonStorage', () => {
 		await storage.setItem('key:with:colons', 'value1');
 		await storage.setItem('key.with.dots', 'value2');
 
-		Assert.strictEqual(await storage.getItem('key:with:colons'), 'value1');
-		Assert.strictEqual(await storage.getItem('key.with.dots'), 'value2');
+		expect(await storage.getItem('key:with:colons')).toBe('value1');
+		expect(await storage.getItem('key.with.dots')).toBe('value2');
 	});
 
 	it('Should handle empty string values', async () => {
 		const storage = new FsJsonStorage(cacheFile);
 
 		await storage.setItem('empty', '');
-		Assert.strictEqual(await storage.getItem('empty'), '');
+		expect(await storage.getItem('empty')).toBe('');
 	});
 
 	it('Should use existing file if it exists', async () => {
@@ -191,6 +191,6 @@ describe('FsJsonStorage', () => {
 		// Creating a storage instance should not overwrite existing data
 		const storage = new FsJsonStorage(cacheFile);
 		const entry = await storage.getItem('existing');
-		Assert.deepStrictEqual(entry, 'data');
+		expect(entry).toEqual('data');
 	});
 });

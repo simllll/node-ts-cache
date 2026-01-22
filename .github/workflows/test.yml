@@ -16,6 +16,17 @@ jobs:
         node-version: ['20', '22', '24']
       fail-fast: false
 
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,6 +50,8 @@ jobs:
         run: pnpm test
         env:
           CI: true
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
   lint:
     name: Lint & Format

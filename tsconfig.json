@@ -1,11 +1,10 @@
 {
 	"compilerOptions": {
-		"module": "esnext",
-		"target": "es2021",
+		"module": "NodeNext",
+		"target": "ES2022",
 		"declaration": true,
-		"allowSyntheticDefaultImports": true,
 		"strict": true,
-		"moduleResolution": "node",
+		"moduleResolution": "NodeNext",
 		"noEmitOnError": true,
 		"allowUnreachableCode": false,
 		"allowUnusedLabels": false,
@@ -14,11 +13,12 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"emitDecoratorMetadata": true,
-		"lib": ["es2019"],
+		"lib": ["ES2022"],
 		"sourceMap": true,
 		"experimentalDecorators": true,
-		"allowJs": false,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
 		"outDir": "./dist"
-	},
-	"compileOnSave": true
+	}
 }
