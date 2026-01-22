@@ -379,6 +379,50 @@ const strategy = new ExpirationStrategy(storage);
 - Lower memory overhead than Redis
 - No persistence (data lost on restart)
 
+### ValkeyStorage
+
+Valkey storage using [iovalkey](https://github.com/valkey-io/iovalkey), the official Valkey client (ioredis-compatible).
+
+```bash
+npm install @node-ts-cache/valkey-storage
+```
+
+```typescript
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import { ValkeyStorage } from '@node-ts-cache/valkey-storage';
+import Valkey from 'iovalkey';
+
+const valkeyClient = new Valkey({
+	host: 'localhost',
+	port: 6379
+});
+
+const storage = new ValkeyStorage(() => valkeyClient, {
+	maxAge: 3600 // TTL in seconds
+});
+
+// With error handler (non-blocking writes)
+storage.onError(error => {
+	console.error('Valkey error:', error);
+});
+
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Constructor Options:**
+
+| Option   | Type     | Default | Description                     |
+| -------- | -------- | ------- | ------------------------------- |
+| `maxAge` | `number` | `86400` | TTL in seconds (used by Valkey) |
+
+**Characteristics:**
+
+- Asynchronous operations
+- Supports multi-get/set operations
+- Redis-compatible (drop-in replacement)
+- Open source (BSD-3 license)
+- Backed by Linux Foundation
+
 ## @MultiCache Details
 
 ### Signature

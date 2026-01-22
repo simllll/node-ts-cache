@@ -42,6 +42,7 @@ The core package includes `MemoryStorage` and `FsJsonStorage`. Additional storag
 | `@node-ts-cache/lru-redis-storage`     | LRU + Redis                                                           | Async      | Two-tier: fast local + shared remote   |
 | `@node-ts-cache/elasticsearch-storage` | [elasticsearch](https://www.npmjs.com/package/@elastic/elasticsearch) | Async      | Search-integrated caching              |
 | `@node-ts-cache/memcached-storage`     | [memcached](https://www.npmjs.com/package/memcached)                  | Async      | High-performance distributed cache     |
+| `@node-ts-cache/valkey-storage`        | [iovalkey](https://www.npmjs.com/package/iovalkey)                    | Async      | Redis-compatible, open source          |
 
 ## Decorators
 

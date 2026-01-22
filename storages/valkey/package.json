@@ -1,0 +1,47 @@
+{
+	"name": "@node-ts-cache/valkey-storage",
+	"version": "1.0.0",
+	"description": "Valkey storage adapter for node-ts-cache",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p .",
+		"clean": "git clean -fdx src",
+		"dev": "tsc -p . -w",
+		"prepublishOnly": "tsc -p .",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@node-ts-cache/core": "workspace:*",
+		"iovalkey": "^0.2.1"
+	},
+	"devDependencies": {
+		"ioredis-mock": "^8.9.0"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/simllll/node-ts-cache.git",
+		"directory": "storages/valkey"
+	},
+	"keywords": [
+		"cache",
+		"typescript",
+		"valkey",
+		"redis-compatible"
+	],
+	"license": "MIT"
+}

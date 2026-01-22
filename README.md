@@ -57,6 +57,7 @@ This is a monorepo containing the following packages:
 | [@node-ts-cache/lru-redis-storage](./storages/lru-redis)         | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-redis-storage.svg)     | Two-tier caching (local LRU + remote Redis)            |
 | [@node-ts-cache/elasticsearch-storage](./storages/elasticsearch) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/elasticsearch-storage.svg) | Elasticsearch storage for search-optimized caching     |
 | [@node-ts-cache/memcached-storage](./storages/memcached)         | ![npm](https://img.shields.io/npm/v/@node-ts-cache/memcached-storage.svg)     | Memcached storage for distributed caching              |
+| [@node-ts-cache/valkey-storage](./storages/valkey)               | ![npm](https://img.shields.io/npm/v/@node-ts-cache/valkey-storage.svg)        | Valkey storage (Redis-compatible, open source)         |
 
 ## Documentation
 
@@ -82,11 +83,11 @@ For detailed documentation, see the [main package README](./ts-cache/README.md).
 │                  └───────┬────────┘                              │
 ├──────────────────────────┼──────────────────────────────────────┤
 │                          ▼                                       │
-│   ┌────────────────────────────────────────────────────────────────────────┐  │
-│   │                           Storage Layer                                 │  │
-│   ├────────┬──────┬───────┬─────┬───────────┬───────────────┬────────────┤  │
-│   │ Memory │  FS  │ Redis │ LRU │ LRU+Redis │ Elasticsearch │  Memcached │  │
-│   └────────┴──────┴───────┴─────┴───────────┴───────────────┴────────────┘  │
+│   ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                                Storage Layer                                      │  │
+│   ├────────┬──────┬───────┬─────┬───────────┬───────────────┬────────────┬──────────┤  │
+│   │ Memory │  FS  │ Redis │ LRU │ LRU+Redis │ Elasticsearch │  Memcached │  Valkey  │  │
+│   └────────┴──────┴───────┴─────┴───────────┴───────────────┴────────────┴──────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,6 +104,7 @@ For detailed documentation, see the [main package README](./ts-cache/README.md).
 | **LRUWithRedisStorage**  | Async | High-performance distributed | Local + remote tiers           |
 | **ElasticsearchStorage** | Async | Search-integrated caching    | Full-text search, scalable     |
 | **MemcachedStorage**     | Async | High-performance distributed | Simple, fast, widely supported |
+| **ValkeyStorage**        | Async | Distributed systems          | Redis-compatible, open source  |
 
 ## Requirements
 
