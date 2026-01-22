@@ -16,12 +16,12 @@ describe('RedisStorage', () => {
 				port
 			}
 		});
-	});
+	}, 30000); // redis-memory-server may need time to download/start
 
 	afterAll(async () => {
-		await storage.disconnect();
-		await redisServer.stop();
-	});
+		if (storage) await storage.disconnect();
+		if (redisServer) await redisServer.stop();
+	}, 10000);
 
 	it('Should clear Redis without errors', async () => {
 		await storage.clear();
