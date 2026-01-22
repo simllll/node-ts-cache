@@ -14,7 +14,7 @@
 		"test": "pnpm -r run test",
 		"changeset": "changeset",
 		"version": "changeset version",
-		"release": "pnpm build && pnpm test && changeset publish"
+		"release": "changeset publish"
 	},
 	"devDependencies": {
 		"@changesets/cli": "^2.27.0",
