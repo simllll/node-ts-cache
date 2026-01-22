@@ -3,17 +3,29 @@ import { createClient, RedisClientOptions } from 'redis';
 
 type RedisClient = ReturnType<typeof createClient>;
 
+export interface RedisStorageOptions extends RedisClientOptions {
+	/** Pre-configured Redis client instance (takes precedence over other options) */
+	client?: RedisClient;
+}
+
 export class RedisStorage implements IAsynchronousCacheType {
 	private client: RedisClient;
-	private connectionPromise: Promise<RedisClient>;
+	private connectionPromise: Promise<RedisClient> | null;
 
-	constructor(redisOptions?: RedisClientOptions) {
-		this.client = createClient(redisOptions);
-		this.connectionPromise = this.client.connect();
+	constructor(redisOptions?: RedisStorageOptions) {
+		if (redisOptions?.client) {
+			this.client = redisOptions.client;
+			this.connectionPromise = null; // Already connected
+		} else {
+			this.client = createClient(redisOptions);
+			this.connectionPromise = this.client.connect();
+		}
 	}
 
 	private async ensureConnected(): Promise<void> {
-		await this.connectionPromise;
+		if (this.connectionPromise) {
+			await this.connectionPromise;
+		}
 	}
 
 	public async getItem<T>(key: string): Promise<T | undefined> {

@@ -1,0 +1,56 @@
+{
+	"name": "@node-ts-cache/elasticsearch-storage",
+	"version": "1.0.0",
+	"description": "Elasticsearch storage adapter for node-ts-cache",
+	"keywords": [
+		"node",
+		"nodejs",
+		"cache",
+		"typescript",
+		"ts",
+		"caching",
+		"elasticsearch",
+		"elastic",
+		"ts-cache"
+	],
+	"homepage": "https://github.com/simllll/node-ts-cache/tree/master/storages/elasticsearch#readme",
+	"bugs": {
+		"url": "https://github.com/simllll/node-ts-cache/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/simllll/node-ts-cache.git"
+	},
+	"license": "MIT",
+	"author": "Simon Tretter <s.tretter@gmail.com>",
+	"contributors": [
+		"Himmet Avsar <avsar.himmet1@gmail.com>"
+	],
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc -p .",
+		"clean": "git clean -fdx src",
+		"dev": "tsc -p . -w",
+		"prepublishOnly": "tsc -p .",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@node-ts-cache/core": "workspace:*",
+		"@elastic/elasticsearch": "^8.17.0"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

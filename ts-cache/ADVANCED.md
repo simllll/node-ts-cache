@@ -298,6 +298,131 @@ const strategy = new ExpirationStrategy(storage);
 - Reduces Redis round-trips
 - Good for high-traffic applications
 
+### ElasticsearchStorage
+
+Elasticsearch-based storage for search-optimized caching.
+
+```bash
+npm install @node-ts-cache/elasticsearch-storage
+```
+
+```typescript
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import { ElasticsearchStorage } from '@node-ts-cache/elasticsearch-storage';
+
+// Basic usage
+const storage = new ElasticsearchStorage({
+	indexName: 'my-cache',
+	clientOptions: {
+		node: 'http://localhost:9200'
+	}
+});
+
+// With pre-configured client
+import { Client } from '@elastic/elasticsearch';
+
+const client = new Client({
+	node: 'https://my-cluster.com',
+	auth: { apiKey: 'your-api-key' }
+});
+
+const storage = new ElasticsearchStorage({
+	indexName: 'my-cache',
+	client
+});
+
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+
+- Asynchronous operations
+- Scalable distributed storage
+- Useful when Elasticsearch is already part of the stack
+- Supports complex document caching
+
+### MemcachedStorage
+
+High-performance distributed caching using Memcached.
+
+```bash
+npm install @node-ts-cache/memcached-storage
+```
+
+```typescript
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import { MemcachedStorage } from '@node-ts-cache/memcached-storage';
+
+// Single server
+const storage = new MemcachedStorage({
+	location: 'localhost:11211'
+});
+
+// Multiple servers (distributed)
+const distributedStorage = new MemcachedStorage({
+	location: ['server1:11211', 'server2:11211', 'server3:11211'],
+	options: {
+		retries: 3,
+		timeout: 5000,
+		poolSize: 10
+	}
+});
+
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Characteristics:**
+
+- Asynchronous operations
+- Simple and fast key-value storage
+- Excellent for distributed caching
+- Lower memory overhead than Redis
+- No persistence (data lost on restart)
+
+### ValkeyStorage
+
+Valkey storage using [iovalkey](https://github.com/valkey-io/iovalkey), the official Valkey client (ioredis-compatible).
+
+```bash
+npm install @node-ts-cache/valkey-storage
+```
+
+```typescript
+import { ExpirationStrategy } from '@node-ts-cache/core';
+import { ValkeyStorage } from '@node-ts-cache/valkey-storage';
+import Valkey from 'iovalkey';
+
+const valkeyClient = new Valkey({
+	host: 'localhost',
+	port: 6379
+});
+
+const storage = new ValkeyStorage(() => valkeyClient, {
+	maxAge: 3600 // TTL in seconds
+});
+
+// With error handler (non-blocking writes)
+storage.onError(error => {
+	console.error('Valkey error:', error);
+});
+
+const strategy = new ExpirationStrategy(storage);
+```
+
+**Constructor Options:**
+
+| Option   | Type     | Default | Description                     |
+| -------- | -------- | ------- | ------------------------------- |
+| `maxAge` | `number` | `86400` | TTL in seconds (used by Valkey) |
+
+**Characteristics:**
+
+- Asynchronous operations
+- Supports multi-get/set operations
+- Redis-compatible (drop-in replacement)
+- Open source (BSD-3 license)
+- Backed by Linux Foundation
+
 ## @MultiCache Details
 
 ### Signature

@@ -48,13 +48,16 @@ This is a monorepo containing the following packages:
 
 ### Storage Adapters
 
-| Package                                                    | Version                                                                    | Description                                            |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [@node-ts-cache/redis-storage](./storages/redis)           | ![npm](https://img.shields.io/npm/v/@node-ts-cache/redis-storage.svg)      | Redis storage using `redis` package (v4.x)             |
-| [@node-ts-cache/ioredis-storage](./storages/redisio)       | ![npm](https://img.shields.io/npm/v/@node-ts-cache/ioredis-storage.svg)    | Redis storage using `ioredis` with compression support |
-| [@node-ts-cache/node-cache-storage](./storages/node-cache) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/node-cache-storage.svg) | In-memory cache using `node-cache`                     |
-| [@node-ts-cache/lru-storage](./storages/lru)               | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-storage.svg)        | LRU cache with automatic eviction                      |
-| [@node-ts-cache/lru-redis-storage](./storages/lru-redis)   | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-redis-storage.svg)  | Two-tier caching (local LRU + remote Redis)            |
+| Package                                                          | Version                                                                       | Description                                            |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [@node-ts-cache/redis-storage](./storages/redis)                 | ![npm](https://img.shields.io/npm/v/@node-ts-cache/redis-storage.svg)         | Redis storage using `redis` package (v4.x)             |
+| [@node-ts-cache/ioredis-storage](./storages/redisio)             | ![npm](https://img.shields.io/npm/v/@node-ts-cache/ioredis-storage.svg)       | Redis storage using `ioredis` with compression support |
+| [@node-ts-cache/node-cache-storage](./storages/node-cache)       | ![npm](https://img.shields.io/npm/v/@node-ts-cache/node-cache-storage.svg)    | In-memory cache using `node-cache`                     |
+| [@node-ts-cache/lru-storage](./storages/lru)                     | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-storage.svg)           | LRU cache with automatic eviction                      |
+| [@node-ts-cache/lru-redis-storage](./storages/lru-redis)         | ![npm](https://img.shields.io/npm/v/@node-ts-cache/lru-redis-storage.svg)     | Two-tier caching (local LRU + remote Redis)            |
+| [@node-ts-cache/elasticsearch-storage](./storages/elasticsearch) | ![npm](https://img.shields.io/npm/v/@node-ts-cache/elasticsearch-storage.svg) | Elasticsearch storage for search-optimized caching     |
+| [@node-ts-cache/memcached-storage](./storages/memcached)         | ![npm](https://img.shields.io/npm/v/@node-ts-cache/memcached-storage.svg)     | Memcached storage for distributed caching              |
+| [@node-ts-cache/valkey-storage](./storages/valkey)               | ![npm](https://img.shields.io/npm/v/@node-ts-cache/valkey-storage.svg)        | Valkey storage (Redis-compatible, open source)         |
 
 ## Documentation
 
@@ -80,25 +83,28 @@ For detailed documentation, see the [main package README](./ts-cache/README.md).
 │                  └───────┬────────┘                              │
 ├──────────────────────────┼──────────────────────────────────────┤
 │                          ▼                                       │
-│   ┌──────────────────────────────────────────────────────────┐  │
-│   │                    Storage Layer                          │  │
-│   ├──────────┬──────────┬──────────┬──────────┬─────────────┤  │
-│   │  Memory  │    FS    │  Redis   │   LRU    │  LRU+Redis  │  │
-│   └──────────┴──────────┴──────────┴──────────┴─────────────┘  │
+│   ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│   │                                Storage Layer                                      │  │
+│   ├────────┬──────┬───────┬─────┬───────────┬───────────────┬────────────┬──────────┤  │
+│   │ Memory │  FS  │ Redis │ LRU │ LRU+Redis │ Elasticsearch │  Memcached │  Valkey  │  │
+│   └────────┴──────┴───────┴─────┴───────────┴───────────────┴────────────┴──────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Choosing a Storage
 
-| Storage                 | Type  | Use Case                     | Features                      |
-| ----------------------- | ----- | ---------------------------- | ----------------------------- |
-| **MemoryStorage**       | Sync  | Development, small datasets  | Zero config, bundled          |
-| **FsJsonStorage**       | Async | Persistent local cache       | File-based, survives restarts |
-| **NodeCacheStorage**    | Sync  | Production single-instance   | TTL support, multi-ops        |
-| **LRUStorage**          | Sync  | Memory-constrained apps      | Auto-eviction, size limits    |
-| **RedisStorage**        | Async | Distributed systems          | Shared cache, redis v4        |
-| **RedisIOStorage**      | Async | Distributed systems          | Compression, modern ioredis   |
-| **LRUWithRedisStorage** | Async | High-performance distributed | Local + remote tiers          |
+| Storage                  | Type  | Use Case                     | Features                       |
+| ------------------------ | ----- | ---------------------------- | ------------------------------ |
+| **MemoryStorage**        | Sync  | Development, small datasets  | Zero config, bundled           |
+| **FsJsonStorage**        | Async | Persistent local cache       | File-based, survives restarts  |
+| **NodeCacheStorage**     | Sync  | Production single-instance   | TTL support, multi-ops         |
+| **LRUStorage**           | Sync  | Memory-constrained apps      | Auto-eviction, size limits     |
+| **RedisStorage**         | Async | Distributed systems          | Shared cache, redis v4         |
+| **RedisIOStorage**       | Async | Distributed systems          | Compression, modern ioredis    |
+| **LRUWithRedisStorage**  | Async | High-performance distributed | Local + remote tiers           |
+| **ElasticsearchStorage** | Async | Search-integrated caching    | Full-text search, scalable     |
+| **MemcachedStorage**     | Async | High-performance distributed | Simple, fast, widely supported |
+| **ValkeyStorage**        | Async | Distributed systems          | Redis-compatible, open source  |
 
 ## Requirements
 
