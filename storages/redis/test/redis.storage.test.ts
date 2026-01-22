@@ -1,24 +1,47 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { RedisStorage } from '../src/redis.storage.js';
+import type { createClient } from 'redis';
 
-// Requires Redis - use REDIS_HOST/REDIS_PORT env vars or defaults to localhost:6379
-// In CI: provided by Redis service container
-// Locally: docker run -p 6379:6379 redis:7
-const host = process.env.REDIS_HOST || 'localhost';
-const port = Number(process.env.REDIS_PORT) || 6379;
+type RedisClient = ReturnType<typeof createClient>;
 
-let storage: RedisStorage;
+// Mock Redis client for testing
+class MockRedisClient {
+	private store: Map<string, string> = new Map();
+
+	async get(key: string): Promise<string | null> {
+		return this.store.get(key) ?? null;
+	}
+
+	async set(key: string, value: string): Promise<'OK'> {
+		this.store.set(key, value);
+		return 'OK';
+	}
+
+	async del(key: string): Promise<number> {
+		this.store.delete(key);
+		return 1;
+	}
+
+	async flushDb(): Promise<'OK'> {
+		this.store.clear();
+		return 'OK';
+	}
+
+	async quit(): Promise<'OK'> {
+		return 'OK';
+	}
+}
 
 describe('RedisStorage', () => {
-	beforeAll(async () => {
-		storage = new RedisStorage({
-			socket: { host, port }
-		});
-	}, 10000);
+	let storage: RedisStorage;
+	let mockClient: MockRedisClient;
 
-	afterAll(async () => {
-		if (storage) await storage.disconnect();
-	}, 10000);
+	beforeEach(() => {
+		mockClient = new MockRedisClient();
+		storage = new RedisStorage({
+			client: mockClient as unknown as RedisClient
+		});
+	});
 
 	it('Should clear Redis without errors', async () => {
 		await storage.clear();

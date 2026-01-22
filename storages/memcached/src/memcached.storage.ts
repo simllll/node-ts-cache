@@ -6,13 +6,19 @@ export interface MemcachedStorageOptions {
 	location: Memcached.Location;
 	/** Memcached client options */
 	options?: Memcached.options;
+	/** Pre-configured Memcached client instance (takes precedence over location) */
+	client?: Memcached;
 }
 
 export class MemcachedStorage implements IAsynchronousCacheType {
 	private client: Memcached;
 
 	constructor(options: MemcachedStorageOptions) {
-		this.client = new Memcached(options.location, options.options);
+		if (options.client) {
+			this.client = options.client;
+		} else {
+			this.client = new Memcached(options.location, options.options);
+		}
 	}
 
 	public async getItem<T>(key: string): Promise<T | undefined> {

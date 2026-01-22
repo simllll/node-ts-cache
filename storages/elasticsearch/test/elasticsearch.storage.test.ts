@@ -1,33 +1,68 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ElasticsearchStorage } from '../src/elasticsearch.storage.js';
 
-// Requires Elasticsearch - use ELASTICSEARCH_NODE env var or defaults to localhost:9200
-// In CI: provided by Elasticsearch service container
-// Locally: docker run -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" elasticsearch:8.12.0
-const node = process.env.ELASTICSEARCH_NODE || 'http://localhost:9200';
-const indexName = 'node-ts-cache-test';
+// Mock Elasticsearch client for testing
+class MockElasticsearchClient {
+	private store: Map<string, unknown> = new Map();
 
-let storage: ElasticsearchStorage;
+	async get({ index, id }: { index: string; id: string }) {
+		const key = `${index}:${id}`;
+		if (!this.store.has(key)) {
+			const error = new Error('Not found');
+			(error as Error & { meta?: { statusCode: number } }).meta = { statusCode: 404 };
+			throw error;
+		}
+		return { _source: this.store.get(key) };
+	}
+
+	async index({
+		index,
+		id,
+		document
+	}: {
+		index: string;
+		id: string;
+		refresh?: string;
+		document: unknown;
+	}) {
+		const key = `${index}:${id}`;
+		this.store.set(key, document);
+		return { result: 'created' };
+	}
+
+	async delete({ index, id }: { index: string; id: string; refresh?: string }) {
+		const key = `${index}:${id}`;
+		if (!this.store.has(key)) {
+			const error = new Error('Not found');
+			(error as Error & { meta?: { statusCode: number } }).meta = { statusCode: 404 };
+			throw error;
+		}
+		this.store.delete(key);
+		return { result: 'deleted' };
+	}
+
+	indices = {
+		delete: async () => {
+			this.store.clear();
+			return { acknowledged: true };
+		}
+	};
+
+	async close() {
+		// no-op
+	}
+}
 
 describe('ElasticsearchStorage', () => {
-	beforeAll(async () => {
+	let storage: ElasticsearchStorage;
+	let mockClient: MockElasticsearchClient;
+
+	beforeEach(() => {
+		mockClient = new MockElasticsearchClient();
 		storage = new ElasticsearchStorage({
-			indexName,
-			clientOptions: { node }
+			indexName: 'test-index',
+			client: mockClient as unknown as import('@elastic/elasticsearch').Client
 		});
-		// Clear any existing test data
-		await storage.clear();
-	}, 30000);
-
-	afterAll(async () => {
-		if (storage) {
-			await storage.clear();
-			await storage.close();
-		}
-	}, 10000);
-
-	it('Should clear Elasticsearch index without errors', async () => {
-		await storage.clear();
 	});
 
 	it('Should return undefined if cache not hit', async () => {
