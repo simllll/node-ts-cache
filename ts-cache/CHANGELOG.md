@@ -1,5 +1,11 @@
 # Change Log
 
+## 1.0.2
+
+### Patch Changes
+
+- 49b7540: Add Elasticsearch and Memcached storage adapters
+
 ## 1.0.1
 
 ### Patch Changes
